@@ -33,9 +33,9 @@ export interface RobloxData {
   lastUpdated: number | null;
 }
 
-// ── CORS proxy helpers (client-only static site) ────────────────
-// Roblox APIs don't send CORS headers, so requests are routed through
-// public read-only proxies with a fallback chain for reliability.
+// ── CORS proxy helpers (fallback for local dev) ─────────────────
+// Roblox APIs don't send CORS headers, so when the Vercel serverless
+// endpoint isn't available (local dev), we fall back to public proxies.
 const PROXIES = [
   (u: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
   (u: string) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
@@ -46,12 +46,10 @@ const PROXIES = [
 async function get<T>(url: string): Promise<T> {
   let lastErr: unknown;
   for (const wrap of PROXIES) {
-    // Try each proxy up to two attempts to mitigate transient failures
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
         const res = await fetch(wrap(url));
         if (!res.ok) {
-          // If rate limited, wait before retrying next proxy
           if (res.status === 429) {
             await new Promise(r => setTimeout(r, 1000 * attempt));
           }
@@ -60,18 +58,15 @@ async function get<T>(url: string): Promise<T> {
         return (await res.json()) as T;
       } catch (err) {
         lastErr = err;
-        // If first attempt fails, retry after a short delay
         if (attempt === 1) await new Promise(r => setTimeout(r, 200));
       }
     }
   }
-  // Final fallback: try direct request (may fail due to CORS)
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(String(res.status));
     return (await res.json()) as T;
   } catch (err) {
-    // Propagate the most recent error
     throw lastErr ?? err;
   }
 }
@@ -87,8 +82,8 @@ function placeId(link: string): string | null {
   return link.match(/\/games\/(\d+)/)?.[1] ?? null;
 }
 
-// ── Data loaders ────────────────────────────────────────────────
-async function loadProfile(): Promise<RobloxProfile | null> {
+// ── Client-side data loaders (used as fallback) ─────────────────
+async function loadProfileClient(): Promise<RobloxProfile | null> {
   const id = SITE.robloxUserId;
   const [user, headshot, followers, friends] = await Promise.all([
     get<{ displayName: string; name: string; created: string }>(
@@ -111,11 +106,10 @@ async function loadProfile(): Promise<RobloxProfile | null> {
   };
 }
 
-async function loadGames(): Promise<RobloxGame[]> {
+async function loadGamesClient(): Promise<RobloxGame[]> {
   const rbxProjects = PROJECTS.filter((p) => p.link.includes('roblox.com/games'));
   if (!rbxProjects.length) return [];
 
-  // place id -> universe id
   const pairs = await Promise.all(
     rbxProjects.map(async (p) => {
       const pid = placeId(p.link);
@@ -146,7 +140,6 @@ async function loadGames(): Promise<RobloxGame[]> {
     }>(`https://games.roblox.com/v1/games?universeIds=${ids}`),
   ]);
 
-  // votes are a separate endpoint
   let votes: Record<number, { upVotes: number; downVotes: number }> = {};
   try {
     const v = await get<{ data: { id: number; upVotes: number; downVotes: number }[] }>(
@@ -186,71 +179,112 @@ async function loadGames(): Promise<RobloxGame[]> {
   }));
 }
 
+// ── Combined loader: Vercel API first → client fallback ─────────
+async function loadAll(): Promise<{ profile: RobloxProfile | null; games: RobloxGame[] }> {
+  // 1) Try the serverless endpoint (available on Vercel)
+  try {
+    const res = await fetch('/api/roblox');
+    if (res.ok) {
+      const json = await res.json();
+      return { profile: json.profile ?? null, games: json.games ?? [] };
+    }
+  } catch {
+    // endpoint unavailable (local dev) – fall through
+  }
+
+  // 2) Fallback: client-side CORS proxy loading
+  const [profileRes, gamesRes] = await Promise.allSettled([
+    loadProfileClient(),
+    loadGamesClient(),
+  ]);
+  return {
+    profile: profileRes.status === 'fulfilled' ? profileRes.value : null,
+    games: gamesRes.status === 'fulfilled' ? gamesRes.value : [],
+  };
+}
+
 // ── Hook ────────────────────────────────────────────────────────
-const REFRESH_MS = 60_000; // live player counts refresh every 60 seconds (reduced load)
+const REFRESH_MS = 60_000;
+const MIN_SPINNER_MS = 800; // minimum time to show the loading spinner
 
 export function useRoblox(): RobloxData {
-  // Attempt to load cached data for instant UI rendering
+  // Hydrate from cache for instant UI, but always start with loading: true
+  // so the spinner is visible on every page load.
   const cached = typeof window !== 'undefined' ? localStorage.getItem('robloxData') : null;
-  const initialData: RobloxData = cached ? JSON.parse(cached) : {
-    profile: null,
-    games: [],
-    loading: true,
+  const parsed = cached ? JSON.parse(cached) : null;
+
+  const [data, setData] = useState<RobloxData>({
+    profile: parsed?.profile ?? null,
+    games: parsed?.games ?? [],
+    loading: true,          // always true so spinner shows
     error: false,
-    lastUpdated: null,
-  };
-  const [data, setData] = useState<RobloxData>(initialData);
+    lastUpdated: parsed?.lastUpdated ?? null,
+  });
   const mounted = useRef(true);
 
   useEffect(() => {
     mounted.current = true;
-    // Keep loading true briefly to show spinner even when data is cached
-    setTimeout(() => {
-      if (mounted.current) {
-        setData((prev) => ({ ...prev, loading: false }));
-      }
-    }, 800);
 
-    const refreshGames = async () => {
+    // ── Initial load (with minimum spinner duration) ──────────
+    (async () => {
+      const start = Date.now();
       try {
-        const res = await fetch('/api/roblox');
-      if (!res.ok) throw new Error(`Failed ${res.status} fetching Roblox games`);
-      const { games } = await res.json();
-      if (!mounted.current) return;
-      const updated = {
-        games: games.length ? games : data.games,
-        loading: false,
-        error: (!data.profile && !games.length) || (data.error && !games.length),
-        lastUpdated: Date.now(),
-      };
-      if (typeof window !== 'undefined') {
-        const cached = { ...data, ...updated };
-        localStorage.setItem('robloxData', JSON.stringify(cached));
-      }
-      setData((prev) => ({ ...prev, ...updated }));
+        const { profile, games } = await loadAll();
+
+        // Guarantee the spinner is visible for at least MIN_SPINNER_MS
+        const elapsed = Date.now() - start;
+        if (elapsed < MIN_SPINNER_MS) {
+          await new Promise((r) => setTimeout(r, MIN_SPINNER_MS - elapsed));
+        }
+
+        if (!mounted.current) return;
+        const newData: RobloxData = {
+          profile,
+          games,
+          loading: false,
+          error: !profile && !games.length,
+          lastUpdated: Date.now(),
+        };
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('robloxData', JSON.stringify(newData));
+        }
+        setData(newData);
       } catch {
-        if (mounted.current) setData((prev) => ({ ...prev, loading: false }));
+        // Still honour the minimum spinner time on error
+        const elapsed = Date.now() - start;
+        if (elapsed < MIN_SPINNER_MS) {
+          await new Promise((r) => setTimeout(r, MIN_SPINNER_MS - elapsed));
+        }
+        if (mounted.current) {
+          setData((prev) => ({ ...prev, loading: false, error: true }));
+        }
+      }
+    })();
+
+    // ── Periodic refresh (no spinner needed) ──────────────────
+    const refresh = async () => {
+      try {
+        const { profile, games } = await loadAll();
+        if (!mounted.current) return;
+        setData((prev) => {
+          const updated: RobloxData = {
+            profile: profile ?? prev.profile,
+            games: games.length ? games : prev.games,
+            loading: false,
+            error: false,
+            lastUpdated: Date.now(),
+          };
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('robloxData', JSON.stringify(updated));
+          }
+          return updated;
+        });
+      } catch {
+        // silently ignore refresh errors
       }
     };
 
-    // initial load: profile + games together
-    (async () => {
-      const res = await fetch('/api/roblox');
-      if (!res.ok) throw new Error(`Failed ${res.status} fetching Roblox data`);
-      const { profile, games } = await res.json();
-      const newData = {
-        profile,
-        games,
-        loading: false,
-        error: !profile && !games.length,
-        lastUpdated: Date.now(),
-      };
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('robloxData', JSON.stringify(newData));
-      }
-      setData(newData);})();
-
-    const interval = setInterval(refreshGames, REFRESH_MS);
+    const interval = setInterval(refresh, REFRESH_MS);
     return () => {
       mounted.current = false;
       clearInterval(interval);
