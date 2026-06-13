@@ -236,7 +236,7 @@ function Hero({ onNavigate, totalPlaying }: { onNavigate: (id: string) => void; 
             </div>
 
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-[var(--text-primary)] leading-tight stagger-2">
-              Water<span className="text-[var(--accent)]">.</span>Portfolio
+              Water<span className="text-glow">.</span>Portfolio
             </h1>
 
             <p className="text-lg text-[var(--text-secondary)] max-w-md stagger-3">
@@ -334,7 +334,7 @@ function About() {
             </div>
 
             <h2 className="section-title">
-              Building Systems That <span className="text-[var(--accent)]">Work</span>
+              Building Systems That <span className="text-glow">Work</span>
             </h2>
 
             <p className="text-[var(--text-secondary)] leading-relaxed">
@@ -547,7 +547,7 @@ function RobloxLive({ data }: { data: ReturnType<typeof useRoblox> }) {
             Live Telemetry
           </div>
           <h2 className="section-title">
-            Live <span className="text-[var(--accent)]">Roblox</span> Stats
+            Live <span className="text-glow">Roblox</span> Stats
           </h2>
           <p className="text-[var(--text-muted)] max-w-lg mx-auto">
             Real-time player counts, visits, and favorites pulled straight from the Roblox API. Player counts
