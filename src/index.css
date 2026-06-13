@@ -51,9 +51,54 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
+  position: relative;
   background:
+    radial-gradient(1200px 600px at 18% -5%, rgba(185, 28, 28, 0.10), transparent 60%),
+    radial-gradient(1000px 500px at 95% 8%, rgba(161, 98, 7, 0.06), transparent 55%),
+    radial-gradient(900px 700px at 50% 110%, rgba(185, 28, 28, 0.07), transparent 60%),
     linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-base) 50%, var(--bg-deep) 100%);
   background-attachment: fixed;
+}
+
+/* Subtle, even technical grid */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.025) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: linear-gradient(180deg, black, transparent 80%);
+  -webkit-mask-image: linear-gradient(180deg, black, transparent 80%);
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* Drifting scanline beam */
+#root::before {
+  content: '';
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 140px;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(220, 38, 38, 0.05), transparent);
+  animation: scanline 9s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #root::before {
+    animation: none;
+    display: none;
+  }
 }
 
 /* Typography */
@@ -187,19 +232,63 @@ body {
 }
 
 .card {
-  background: var(--bg-surface);
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(26, 29, 38, 0.55), rgba(19, 22, 29, 0.85));
   border: 1px solid var(--border);
-  border-radius: 4px;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  border-radius: 6px;
+  transition: border-color var(--transition-smooth), box-shadow var(--transition-smooth),
+    transform var(--transition-smooth);
 }
 
 .card:hover {
   border-color: var(--border-accent);
-  box-shadow: 0 0 24px rgba(185, 28, 28, 0.08);
+  box-shadow:
+    0 0 0 1px rgba(185, 28, 28, 0.12),
+    0 12px 40px -12px rgba(185, 28, 28, 0.18),
+    0 8px 24px -8px rgba(0, 0, 0, 0.6);
+  transform: translateY(-3px);
+}
+
+/* Corner bracket accents on hover */
+.card::before,
+.card::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 1px solid transparent;
+  transition: border-color var(--transition-smooth);
+  pointer-events: none;
+}
+
+.card::before {
+  top: 6px;
+  left: 6px;
+  border-top-color: transparent;
+  border-left-color: transparent;
+}
+
+.card::after {
+  bottom: 6px;
+  right: 6px;
+  border-bottom-color: transparent;
+  border-right-color: transparent;
+}
+
+.card:hover::before {
+  border-top-color: var(--accent);
+  border-left-color: var(--accent);
+}
+
+.card:hover::after {
+  border-bottom-color: var(--accent);
+  border-right-color: var(--accent);
 }
 
 .card-accent {
   border-top: 2px solid var(--accent);
+  box-shadow: 0 -1px 12px -2px rgba(185, 28, 28, 0.25);
 }
 
 .btn {
@@ -225,13 +314,30 @@ body {
   transform: scale(0.98);
 }
 
+/* Sheen sweep on hover */
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.18) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.btn:hover::after {
+  transform: translateX(120%);
+}
+
 .btn-primary {
-  background: var(--accent);
+  background: linear-gradient(180deg, var(--accent-bright), var(--accent));
   color: white;
+  box-shadow: 0 4px 18px -6px rgba(220, 38, 38, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .btn-primary:hover {
-  background: var(--accent-bright);
+  background: linear-gradient(180deg, #ef4444, var(--accent-bright));
+  box-shadow: 0 6px 26px -6px rgba(220, 38, 38, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .btn-secondary {
@@ -257,10 +363,16 @@ body {
 
 /* Terminal styling */
 .terminal {
-  background: var(--bg-deep);
+  background:
+    radial-gradient(120% 100% at 50% 0%, rgba(185, 28, 28, 0.06), transparent 60%),
+    var(--bg-deep);
   border: 1px solid var(--border-accent);
-  border-radius: 4px;
+  border-radius: 6px;
   overflow: hidden;
+  box-shadow:
+    0 24px 60px -20px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(185, 28, 28, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .terminal-header {
@@ -303,7 +415,8 @@ body {
 }
 
 .hud-value-accent {
-  color: var(--accent);
+  color: var(--accent-bright);
+  text-shadow: 0 0 16px rgba(220, 38, 38, 0.4);
 }
 
 /* Status indicators */
@@ -324,7 +437,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 12px;
+  padding: 5px 14px;
   background: var(--accent-muted);
   border: 1px solid var(--border-accent);
   border-radius: 2px;
@@ -332,8 +445,9 @@ body {
   font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.15em;
-  color: var(--accent);
+  color: var(--accent-bright);
   text-transform: uppercase;
+  box-shadow: 0 0 20px -6px rgba(220, 38, 38, 0.4), inset 0 0 12px -8px rgba(220, 38, 38, 0.6);
 }
 
 .section-title {
@@ -343,6 +457,12 @@ body {
   letter-spacing: 0.02em;
   color: var(--text-primary);
   line-height: 1.2;
+}
+
+/* Glowing crimson accent text (use on highlighted words) */
+.text-glow {
+  color: var(--accent-bright);
+  text-shadow: 0 0 18px rgba(220, 38, 38, 0.45);
 }
 
 /* Progress bar */
