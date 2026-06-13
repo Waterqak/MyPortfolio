@@ -80,6 +80,49 @@ function ytId(url: string): string | null {
   return url.match(/(?:youtu\.be\/|v=)([\w-]{6,})/)?.[1] ?? null;
 }
 
+// ── Signature indexed section header ─────────────────────────────
+function SectionHeader({
+  index,
+  label,
+  title,
+  description,
+  icon: Icon,
+  center = false,
+}: {
+  index: string;
+  label: string;
+  title: React.ReactNode;
+  description?: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  center?: boolean;
+}) {
+  return (
+    <div className={`flex gap-4 sm:gap-5 ${center ? 'flex-col items-center text-center' : 'items-start'}`}>
+      <span
+        aria-hidden="true"
+        className="section-index font-display font-bold leading-none select-none"
+      >
+        {index}
+      </span>
+      <div className={`space-y-3 ${center ? '' : 'pt-1'}`}>
+        <div
+          className={`flex items-center gap-2.5 font-mono text-[10px] tracking-[0.22em] uppercase text-[var(--accent-bright)] ${center ? 'justify-center' : ''}`}
+        >
+          {Icon && <Icon className="w-3.5 h-3.5" />}
+          <span>{label}</span>
+          <span className="h-px w-10 bg-[var(--border-accent)]" />
+        </div>
+        <h2 className="section-title">{title}</h2>
+        {description && (
+          <p className={`text-[var(--text-muted)] leading-relaxed ${center ? 'max-w-lg mx-auto' : 'max-w-lg'}`}>
+            {description}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Header ───────────────────────────────────────────────────────
 function Header({ currentSection, onNavigate }: { currentSection: string; onNavigate: (id: string) => void }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
