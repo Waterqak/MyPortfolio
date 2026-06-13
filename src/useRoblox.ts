@@ -213,20 +213,21 @@ export function useRoblox(): RobloxData {
 
     const refreshGames = async () => {
       try {
-        const games = await loadGames();
-        if (!mounted.current) return;
-        const updated = {
-          games: games.length ? games : data.games,
-          loading: false,
-          error: (!data.profile && !games.length) || (data.error && !games.length),
-          lastUpdated: Date.now(),
-        };
-        // Update cache
-        if (typeof window !== 'undefined') {
-          const cached = { ...data, ...updated };
-          localStorage.setItem('robloxData', JSON.stringify(cached));
-        }
-        setData((prev) => ({ ...prev, ...updated }));
+        const res = await fetch('/api/roblox');
+      if (!res.ok) throw new Error(`Failed ${res.status} fetching Roblox games`);
+      const { games } = await res.json();
+      if (!mounted.current) return;
+      const updated = {
+        games: games.length ? games : data.games,
+        loading: false,
+        error: (!data.profile && !games.length) || (data.error && !games.length),
+        lastUpdated: Date.now(),
+      };
+      if (typeof window !== 'undefined') {
+        const cached = { ...data, ...updated };
+        localStorage.setItem('robloxData', JSON.stringify(cached));
+      }
+      setData((prev) => ({ ...prev, ...updated }));
       } catch {
         if (mounted.current) setData((prev) => ({ ...prev, loading: false }));
       }
@@ -234,10 +235,9 @@ export function useRoblox(): RobloxData {
 
     // initial load: profile + games together
     (async () => {
-      const [profileRes, gamesRes] = await Promise.allSettled([loadProfile(), loadGames()]);
-      if (!mounted.current) return;
-      const profile = profileRes.status === 'fulfilled' ? profileRes.value : null;
-      const games = gamesRes.status === 'fulfilled' ? gamesRes.value : [];
+      const res = await fetch('/api/roblox');
+      if (!res.ok) throw new Error(`Failed ${res.status} fetching Roblox data`);
+      const { profile, games } = await res.json();
       const newData = {
         profile,
         games,
@@ -245,13 +245,10 @@ export function useRoblox(): RobloxData {
         error: !profile && !games.length,
         lastUpdated: Date.now(),
       };
-      // Cache result for next page load
       if (typeof window !== 'undefined') {
         localStorage.setItem('robloxData', JSON.stringify(newData));
       }
-      setData(newData);
-
-    })();
+      setData(newData);})();
 
     const interval = setInterval(refreshGames, REFRESH_MS);
     return () => {
