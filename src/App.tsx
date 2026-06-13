@@ -640,6 +640,12 @@ function RobloxLive({ data }: { data: ReturnType<typeof useRoblox> }) {
           </div>
         </div>
 
+        {/* Loading spinner while fetching data */}
+        {loading && (
+          <div className="flex justify-center py-4">
+            <div className="spinner"></div>
+          </div>
+        )}
         {/* Games grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading && !games.length ? (

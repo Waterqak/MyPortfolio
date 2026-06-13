@@ -40,20 +40,40 @@ const PROXIES = [
   (u: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
   (u: string) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
   (u: string) => `https://thingproxy.freeboard.io/fetch/${u}`,
+  (u: string) => `https://api.allorigins.cf/raw?url=${encodeURIComponent(u)}`,
 ];
 
 async function get<T>(url: string): Promise<T> {
   let lastErr: unknown;
   for (const wrap of PROXIES) {
-    try {
-      const res = await fetch(wrap(url));
-      if (!res.ok) throw new Error(String(res.status));
-      return (await res.json()) as T;
-    } catch (err) {
-      lastErr = err;
+    // Try each proxy up to two attempts to mitigate transient failures
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const res = await fetch(wrap(url));
+        if (!res.ok) {
+          // If rate limited, wait before retrying next proxy
+          if (res.status === 429) {
+            await new Promise(r => setTimeout(r, 1000 * attempt));
+          }
+          throw new Error(String(res.status));
+        }
+        return (await res.json()) as T;
+      } catch (err) {
+        lastErr = err;
+        // If first attempt fails, retry after a short delay
+        if (attempt === 1) await new Promise(r => setTimeout(r, 200));
+      }
     }
   }
-  throw lastErr ?? new Error('All proxies failed');
+  // Final fallback: try direct request (may fail due to CORS)
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(String(res.status));
+    return (await res.json()) as T;
+  } catch (err) {
+    // Propagate the most recent error
+    throw lastErr ?? err;
+  }
 }
 
 export function fmtNum(n: number | null | undefined): string {
@@ -167,32 +187,46 @@ async function loadGames(): Promise<RobloxGame[]> {
 }
 
 // ── Hook ────────────────────────────────────────────────────────
-const REFRESH_MS = 30_000; // live player counts refresh every 30s
+const REFRESH_MS = 60_000; // live player counts refresh every 60 seconds (reduced load)
 
 export function useRoblox(): RobloxData {
-  const [data, setData] = useState<RobloxData>({
+  // Attempt to load cached data for instant UI rendering
+  const cached = typeof window !== 'undefined' ? localStorage.getItem('robloxData') : null;
+  const initialData: RobloxData = cached ? JSON.parse(cached) : {
     profile: null,
     games: [],
     loading: true,
     error: false,
     lastUpdated: null,
-  });
+  };
+  const [data, setData] = useState<RobloxData>(initialData);
   const mounted = useRef(true);
 
   useEffect(() => {
     mounted.current = true;
+    // Keep loading true briefly to show spinner even when data is cached
+    setTimeout(() => {
+      if (mounted.current) {
+        setData((prev) => ({ ...prev, loading: false }));
+      }
+    }, 800);
 
     const refreshGames = async () => {
       try {
         const games = await loadGames();
         if (!mounted.current) return;
-        setData((prev) => ({
-          ...prev,
-          games: games.length ? games : prev.games,
+        const updated = {
+          games: games.length ? games : data.games,
           loading: false,
-          error: prev.profile ? prev.error : !games.length,
+          error: (!data.profile && !games.length) || (data.error && !games.length),
           lastUpdated: Date.now(),
-        }));
+        };
+        // Update cache
+        if (typeof window !== 'undefined') {
+          const cached = { ...data, ...updated };
+          localStorage.setItem('robloxData', JSON.stringify(cached));
+        }
+        setData((prev) => ({ ...prev, ...updated }));
       } catch {
         if (mounted.current) setData((prev) => ({ ...prev, loading: false }));
       }
@@ -204,13 +238,19 @@ export function useRoblox(): RobloxData {
       if (!mounted.current) return;
       const profile = profileRes.status === 'fulfilled' ? profileRes.value : null;
       const games = gamesRes.status === 'fulfilled' ? gamesRes.value : [];
-      setData({
+      const newData = {
         profile,
         games,
         loading: false,
         error: !profile && !games.length,
         lastUpdated: Date.now(),
-      });
+      };
+      // Cache result for next page load
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('robloxData', JSON.stringify(newData));
+      }
+      setData(newData);
+
     })();
 
     const interval = setInterval(refreshGames, REFRESH_MS);
