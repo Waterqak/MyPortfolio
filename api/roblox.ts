@@ -1,9 +1,35 @@
 // api/roblox.ts
-// Vercel serverless function – aggregates Roblox profile + games data.
-// Runs server-side so no CORS proxies are needed.
+// Vercel serverless function – fully self-contained (no imports from src/).
+// Aggregates Roblox profile + games data server-side to avoid CORS.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { PROJECTS, SITE } from '../src/config';
+
+// ── Config (inlined to avoid cross-directory import issues) ─────
+const ROBLOX_USER_ID = '2878666652';
+
+// Only the Roblox game projects (title, link, fallback banner)
+const ROBLOX_PROJECTS = [
+  {
+    title: 'Chillin Place',
+    link: 'https://www.roblox.com/games/17290214724/Chillin-Place',
+    src: 'https://tr.rbxcdn.com/180DAY-c69740761a8556385075f48b5b71147a/768/432/Image/Png/noFilter',
+  },
+  {
+    title: 'Escape Lava: Collect Brainrots',
+    link: 'https://www.roblox.com/games/85862915773488/Escape-Lava-to-collect-brainrots',
+    src: 'https://tr.rbxcdn.com/180DAY-1f5e4f49f3ff9eddbf732387c8b19cd7/768/432/Image/Webp/noFilter',
+  },
+  {
+    title: 'Operation: Azure Rift',
+    link: 'https://www.roblox.com/games/140471518514522/Operation-Azure-Rift',
+    src: 'https://tr.rbxcdn.com/180DAY-1384a973e73995479b5db690aa51e902/768/432/Image/Png/noFilter',
+  },
+  {
+    title: 'Yan-Chan Simulator',
+    link: 'https://www.roblox.com/games/90515983274647/Yan-Chan-Simulator',
+    src: 'https://tr.rbxcdn.com/180DAY-cae9bb90f7a6e78c66ed1e18af2727e6/768/432/Image/Webp/noFilter',
+  },
+];
 
 // ── Helpers ─────────────────────────────────────────────────────
 async function fetchJSON<T>(url: string): Promise<T> {
@@ -18,7 +44,7 @@ function placeId(link: string): string | null {
 
 // ── Loaders ─────────────────────────────────────────────────────
 async function loadProfile() {
-  const id = SITE.robloxUserId;
+  const id = ROBLOX_USER_ID;
   const [user, headshot, followers, friends] = await Promise.all([
     fetchJSON<{ displayName: string; name: string; created: string }>(
       `https://users.roblox.com/v1/users/${id}`,
@@ -45,11 +71,10 @@ async function loadProfile() {
 }
 
 async function loadGames() {
-  const rbxProjects = PROJECTS.filter((p) => p.link.includes('roblox.com/games'));
-  if (!rbxProjects.length) return [];
+  if (!ROBLOX_PROJECTS.length) return [];
 
   const pairs = await Promise.all(
-    rbxProjects.map(async (p) => {
+    ROBLOX_PROJECTS.map(async (p) => {
       const pid = placeId(p.link);
       if (!pid) return null;
       try {
@@ -118,11 +143,10 @@ async function loadGames() {
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
   try {
     const [profile, games] = await Promise.all([loadProfile(), loadGames()]);
-    // Cache at the edge for 60 s, serve stale for up to 5 min while revalidating
     res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
     return res.status(200).json({ profile, games });
-  } catch (e) {
-    console.error('Roblox API error:', e);
-    return res.status(500).json({ error: 'Failed to fetch Roblox data' });
+  } catch (e: any) {
+    console.error('Roblox API error:', e?.message ?? e);
+    return res.status(500).json({ error: 'Failed to fetch Roblox data', detail: e?.message });
   }
 }
