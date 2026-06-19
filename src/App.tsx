@@ -20,6 +20,9 @@ import {
   Gamepad2,
   Activity,
   Play,
+  Image as ImageIcon,
+  Maximize2,
+  X as CloseIcon,
 } from 'lucide-react';
 import {
   SITE,
@@ -27,7 +30,9 @@ import {
   FUN_SKILLS,
   TIMELINE,
   PROJECTS,
+  GALLERY,
   type ProjectColor,
+  type GalleryItem,
 } from './config';
 import { useRoblox, fmtNum, type RobloxGame } from './useRoblox';
 
@@ -63,6 +68,7 @@ const NAV_ITEMS = [
   { id: 'skills', label: 'Skills' },
   { id: 'roblox', label: 'Live' },
   { id: 'projects', label: 'Projects' },
+  { id: 'gallery', label: 'Gallery' },
   { id: 'history', label: 'History' },
   { id: 'contact', label: 'Contact' },
 ];
@@ -730,6 +736,226 @@ function Projects() {
   );
 }
 
+// ── Gallery ──────────────────────────────────────────────────────
+function GalleryItemCard({
+  item,
+  index,
+  onClick,
+}: {
+  item: GalleryItem;
+  index: number;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="card overflow-hidden group flex flex-col text-left w-full"
+      style={{ animationDelay: `${index * 0.08}s` }}
+    >
+      <div className="relative h-48 bg-[var(--bg-elevated)] overflow-hidden">
+        <img
+          src={item.src}
+          alt={item.title}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-deep)] via-transparent to-transparent opacity-60" />
+        <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 rounded bg-[var(--bg-deep)]/80 border border-[var(--border)] opacity-0 group-hover:opacity-100 transition-opacity">
+          <Maximize2 className="w-3.5 h-3.5 text-[var(--accent)]" />
+          <span className="font-mono text-[10px] text-[var(--text-muted)]">View</span>
+        </div>
+        <div className="absolute bottom-3 left-3">
+          <span className="tag bg-[var(--accent-muted)] border-[var(--border-accent)] text-[var(--accent-bright)]">
+            {item.category}
+          </span>
+        </div>
+      </div>
+      <div className="p-4 space-y-2">
+        <h3 className="font-display font-bold text-[var(--text-primary)] leading-tight group-hover:text-[var(--accent)] transition-colors">
+          {item.title}
+        </h3>
+        <p className="text-xs text-[var(--text-muted)] leading-relaxed line-clamp-2">{item.description}</p>
+        <div className="flex flex-wrap gap-1 pt-1">
+          {item.tags.map((tag) => (
+            <span key={tag} className="text-[10px] font-mono text-[var(--silver-muted)]">
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function GalleryLightbox({
+  item,
+  onClose,
+  onPrev,
+  onNext,
+  hasPrev,
+  hasNext,
+}: {
+  item: GalleryItem;
+  onClose: () => void;
+  onPrev: () => void;
+  onNext: () => void;
+  hasPrev: boolean;
+  hasNext: boolean;
+}) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowLeft' && hasPrev) onPrev();
+      if (e.key === 'ArrowRight' && hasNext) onNext();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [onClose, onPrev, onNext, hasPrev, hasNext]);
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 animate-fade-in-fast">
+      <div className="absolute inset-0 bg-[var(--bg-deep)]/95 backdrop-blur-sm" onClick={onClose} />
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 md:top-6 md:right-6 z-10 p-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
+        aria-label="Close lightbox"
+      >
+        <CloseIcon className="w-5 h-5 text-[var(--text-secondary)]" />
+      </button>
+      {hasPrev && (
+        <button
+          onClick={onPrev}
+          className="absolute left-4 md:left-6 z-10 p-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
+          aria-label="Previous image"
+        >
+          <ArrowRight className="w-5 h-5 text-[var(--text-secondary)] rotate-180" />
+        </button>
+      )}
+      {hasNext && (
+        <button
+          onClick={onNext}
+          className="absolute right-4 md:right-16 z-10 p-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
+          aria-label="Next image"
+        >
+          <ArrowRight className="w-5 h-5 text-[var(--text-secondary)]" />
+        </button>
+      )}
+      <div className="relative z-10 max-w-5xl w-full flex flex-col gap-4">
+        <div className="card overflow-hidden">
+          <img
+            src={item.src}
+            alt={item.title}
+            className="w-full max-h-[70vh] object-contain bg-[var(--bg-elevated)]"
+          />
+        </div>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 px-2">
+          <div className="space-y-1">
+            <span className="tag bg-[var(--accent-muted)] border-[var(--border-accent)] text-[var(--accent-bright)]">
+              {item.category}
+            </span>
+            <h3 className="font-display text-xl font-bold text-[var(--text-primary)]">{item.title}</h3>
+            <p className="text-sm text-[var(--text-muted)]">{item.description}</p>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {item.tags.map((tag) => (
+              <span key={tag} className="tag">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Gallery() {
+  const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const categories = ['ALL', ...Array.from(new Set(GALLERY.map((p) => p.category)))];
+  const [filter, setFilter] = useState('ALL');
+
+  const filtered = filter === 'ALL' ? GALLERY : GALLERY.filter((p) => p.category === filter);
+
+  const handleSelect = (item: GalleryItem, index: number) => {
+    setSelectedItem(item);
+    setSelectedIndex(index);
+  };
+
+  const handleClose = () => setSelectedItem(null);
+
+  const handlePrev = () => {
+    if (selectedIndex > 0) {
+      setSelectedItem(filtered[selectedIndex - 1]);
+      setSelectedIndex(selectedIndex - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (selectedIndex < filtered.length - 1) {
+      setSelectedItem(filtered[selectedIndex + 1]);
+      setSelectedIndex(selectedIndex + 1);
+    }
+  };
+
+  return (
+    <section id="gallery" className="min-h-screen flex items-center py-24 px-6">
+      <div className="max-w-6xl mx-auto w-full space-y-12">
+        <div className="space-y-4">
+          <div className="section-badge">
+            <ImageIcon className="w-3.5 h-3.5" />
+            UI Gallery
+          </div>
+          <h2 className="section-title">Visual Showcase</h2>
+          <p className="text-[var(--text-muted)] max-w-md">
+            A collection of UI designs, interfaces, and visual work created for Roblox games.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setFilter(cat)}
+              className={`font-mono text-xs tracking-wider uppercase px-3 py-1.5 rounded transition-colors
+                ${filter === cat
+                  ? 'bg-[var(--accent)] text-white'
+                  : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border)] hover:border-[var(--accent)]'}`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filtered.map((item, index) => (
+            <GalleryItemCard
+              key={item.title}
+              item={item}
+              index={index}
+              onClick={() => handleSelect(item, index)}
+            />
+          ))}
+        </div>
+
+        {selectedItem && (
+          <GalleryLightbox
+            item={selectedItem}
+            onClose={handleClose}
+            onPrev={handlePrev}
+            onNext={handleNext}
+            hasPrev={selectedIndex > 0}
+            hasNext={selectedIndex < filtered.length - 1}
+          />
+        )}
+      </div>
+    </section>
+  );
+}
+
 // ── History ──────────────────────────────────────────────────────
 function History() {
   return (
@@ -906,6 +1132,7 @@ function App() {
         <Skills />
         <RobloxLive data={roblox} />
         <Projects />
+        <Gallery />
         <History />
         <Contact />
       </main>

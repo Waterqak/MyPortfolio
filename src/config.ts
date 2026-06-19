@@ -30,6 +30,14 @@ export interface TimelineItem {
   dim?: boolean;
 }
 
+export interface GalleryItem {
+  title: string;
+  category: string;
+  description: string;
+  src: string;
+  tags: string[];
+}
+
 export const SITE = {
   name: 'Water',
   age: 16,
@@ -172,5 +180,64 @@ export const PROJECTS: Project[] = [
     media: 'youtube',
     src: 'https://youtu.be/FjZHsIuzUlY',
     color: 'purple',
+  },
+];
+
+export const GALLERY: GalleryItem[] = [
+  {
+    title: 'Main Menu System',
+    category: 'UI DESIGN',
+    description: 'Clean, responsive main menu with animated transitions and hover effects.',
+    src: 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=800',
+    tags: ['Menu', 'Animation', 'Responsive'],
+  },
+  {
+    title: 'Inventory Interface',
+    category: 'UI DESIGN',
+    description: 'Drag-and-drop inventory system with item tooltips and category filtering.',
+    src: 'https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg?auto=compress&cs=tinysrgb&w=800',
+    tags: ['Inventory', 'Drag & Drop', 'Tooltips'],
+  },
+  {
+    title: 'Settings Panel',
+    category: 'UI DESIGN',
+    description: 'Comprehensive settings panel with sliders, toggles, and real-time preview.',
+    src: 'https://images.pexels.com/photos/261528/pexels-photo-261528.jpeg?auto=compress&cs=tinysrgb&w=800',
+    tags: ['Settings', 'Sliders', 'Controls'],
+  },
+  {
+    title: 'Health & HUD System',
+    category: 'UI DESIGN',
+    description: 'Dynamic health bars, ammo counters, and minimap integration for gameplay.',
+    src: 'https://images.pexels.com/photos/316466/pexels-photo-316466.jpeg?auto=compress&cs=tinysrgb&w=800',
+    tags: ['HUD', 'Health Bar', 'Minimap'],
+  },
+  {
+    title: 'Quest Journal',
+    category: 'UI DESIGN',
+    description: 'Quest tracking interface with progress indicators and reward previews.',
+    src: 'https://images.pexels.com/photos/1114410/pexels-photo-1114410.jpeg?auto=compress&cs=tinysrgb&w=800',
+    tags: ['Quest', 'Progress', 'Journal'],
+  },
+  {
+    title: 'Shop Interface',
+    category: 'UI DESIGN',
+    description: 'In-game shop with item previews, pricing, and purchase confirmation flow.',
+    src: 'https://images.pexels.com/photos/230676/pexels-photo-230676.jpeg?auto=compress&cs=tinysrgb&w=800',
+    tags: ['Shop', 'Purchase', 'Preview'],
+  },
+  {
+    title: 'Notification System',
+    category: 'UI DESIGN',
+    description: 'Animated notification popups with queuing and priority handling.',
+    src: 'https://images.pexels.com/photos/4226256/pexels-photo-4226256.jpeg?auto=compress&cs=tinysrgb&w=800',
+    tags: ['Notifications', 'Animation', 'Queue'],
+  },
+  {
+    title: 'Character Customization',
+    category: 'UI DESIGN',
+    description: 'Character editor with color pickers, sliders, and live 3D preview.',
+    src: 'https://images.pexels.com/photos/1222272/pexels-photo-1222272.jpeg?auto=compress&cs=tinysrgb&w=800',
+    tags: ['Customization', 'Color Picker', '3D Preview'],
   },
 ];

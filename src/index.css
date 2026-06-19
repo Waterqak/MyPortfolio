@@ -144,8 +144,8 @@ body::before {
 }
 
 @keyframes fadeInFast {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 @keyframes slideInRight {
@@ -211,6 +211,10 @@ body::before {
 
 .animate-scale-in {
   animation: scaleIn 0.4s var(--transition-smooth) both;
+}
+
+.animate-fade-in-fast {
+  animation: fadeInFast 0.25s var(--transition-fast) both;
 }
 
 .animate-float {
@@ -499,6 +503,14 @@ body::before {
     linear-gradient(rgba(148, 163, 184, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(148, 163, 184, 0.03) 1px, transparent 1px);
   background-size: 40px 40px;
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* Spinner */
