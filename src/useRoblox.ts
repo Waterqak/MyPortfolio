@@ -179,17 +179,23 @@ async function loadGamesClient(): Promise<RobloxGame[]> {
   }));
 }
 
-// ── Combined loader: Vercel API first → client fallback ─────────
+// ── Combined loader: Supabase Edge Function first → client fallback ─────────
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
 async function loadAll(): Promise<{ profile: RobloxProfile | null; games: RobloxGame[] }> {
-  // 1) Try the serverless endpoint (available on Vercel)
-  try {
-    const res = await fetch('/api/roblox');
-    if (res.ok) {
-      const json = await res.json();
-      return { profile: json.profile ?? null, games: json.games ?? [] };
+  // 1) Try the Supabase Edge Function
+  if (SUPABASE_URL) {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/roblox-stats`, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        return { profile: json.profile ?? null, games: json.games ?? [] };
+      }
+    } catch {
+      // endpoint unavailable – fall through
     }
-  } catch {
-    // endpoint unavailable (local dev) – fall through
   }
 
   // 2) Fallback: client-side CORS proxy loading
