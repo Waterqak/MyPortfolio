@@ -110,7 +110,7 @@ export const PROJECTS: Project[] = [
     tags: ['FPS', 'Narrative', 'UI'],
     link: 'https://www.roblox.com/games/140471518514522/Operation-Azure-Rift',
     media: 'image',
-    src: 'https://tr.rbxcdn.com/180DAY-1384a973e73995479b5db690aa51e902/768/432/Image/Png/noFilter',
+    src: 'https://tr.rbxcdn.com/180DAY-48fa84d77e3cb3cddf71475cd9b09d67/768/432/Image/Webp/noFilter',
     color: 'blue',
   },
   {
