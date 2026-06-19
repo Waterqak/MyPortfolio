@@ -909,7 +909,7 @@ function Gallery() {
             <ImageIcon className="w-3.5 h-3.5" />
             UI Gallery
           </div>
-          <h2 className="section-title">Visual Showcase</h2>
+          <h2 className="section-title">Visual Showcase (Testing)</h2>
           <p className="text-[var(--text-muted)] max-w-md">
             A collection of UI designs, interfaces, and visual work created for Roblox games.
           </p>
