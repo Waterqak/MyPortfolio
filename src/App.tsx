@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Terminal,
   Database,
@@ -86,72 +86,159 @@ function ytId(url: string): string | null {
   return url.match(/(?:youtu\.be\/|v=)([\w-]{6,})/)?.[1] ?? null;
 }
 
+// ── Ripple Button Component ──────────────────────────────────────────
+function RippleButton({
+  children,
+  onClick,
+  className = '',
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { children: React.ReactNode }) {
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      const button = buttonRef.current;
+      if (!button) return;
+
+      const rect = button.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const ripple = document.createElement('span');
+      ripple.className = 'btn-ripple';
+      ripple.style.left = `${x}px`;
+      ripple.style.top = `${y}px`;
+      ripple.style.width = '20px';
+      ripple.style.height = '20px';
+
+      button.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 600);
+
+      onClick?.(e);
+    },
+    [onClick]
+  );
+
+  return (
+    <button ref={buttonRef} onClick={handleClick} className={className} {...props}>
+      {children}
+    </button>
+  );
+}
+
+// ── Scroll Reveal Hook ─────────────────────────────────────────────────
+function useScrollReveal(threshold = 0.1) {
+  const ref = useRef<HTMLElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [threshold]);
+
+  return { ref, isVisible };
+}
+
 // ── Header ───────────────────────────────────────────────────────
 function Header({ currentSection, onNavigate }: { currentSection: string; onNavigate: (id: string) => void }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-[var(--border)]">
       <div className="max-w-6xl mx-auto px-6 h-[var(--nav-height)] flex items-center justify-between">
-        <button
+        <RippleButton
           onClick={() => onNavigate('hero')}
-          className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+          className="flex items-center gap-3 hover:opacity-80 transition-all duration-200 bg-transparent border-none"
         >
-          <div className="w-9 h-9 rounded bg-[var(--bg-surface)] border border-[var(--border-accent)] flex items-center justify-center">
+          <div className="w-9 h-9 rounded bg-[var(--bg-surface)] border border-[var(--border-accent)] flex items-center justify-center transition-transform duration-300 hover:scale-110 hover:rotate-3 hover:shadow-lg hover:shadow-[var(--accent)]/20">
             <Database className="w-5 h-5 text-[var(--accent)]" />
           </div>
           <span className="font-display font-bold text-lg tracking-wide">
             <span className="text-[var(--text-primary)]">Water</span>
             <span className="text-[var(--silver-muted)]">.Portfolio</span>
           </span>
-        </button>
+        </RippleButton>
 
         <nav className="hidden md:flex items-center gap-7">
           {NAV_ITEMS.map((item) => (
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className={`font-mono text-xs tracking-widest uppercase transition-colors relative
-                ${currentSection === item.id ? 'text-[var(--accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}
+              onMouseEnter={() => setHoveredItem(item.id)}
+              onMouseLeave={() => setHoveredItem(null)}
+              className={`nav-item font-mono text-xs tracking-widest uppercase transition-all duration-300
+                ${currentSection === item.id ? 'text-[var(--accent)] active' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}
             >
-              {item.label}
-              {currentSection === item.id && (
-                <span className="absolute -bottom-2 left-0 right-0 h-px bg-[var(--accent)]" />
+              <span className="relative z-10">{item.label}</span>
+              {(currentSection === item.id || hoveredItem === item.id) && (
+                <span className="absolute -bottom-2 left-0 right-0 h-px bg-[var(--accent)] shadow-[0_0_8px_rgba(220,38,38,0.5)] animate-fade-in-fast" />
               )}
             </button>
           ))}
         </nav>
 
-        <button
+        <RippleButton
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-2 text-[var(--text-secondary)]"
+          className="md:hidden p-2 text-[var(--text-secondary)] bg-transparent border-none transition-transform duration-300 hover:scale-110"
           aria-label="Toggle navigation menu"
         >
-          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
+          <div className="relative w-5 h-5">
+            <span
+              className={`absolute left-0 top-0.5 w-5 h-0.5 bg-current transform transition-all duration-300 ${
+                mobileMenuOpen ? 'rotate-45 translate-y-[7px]' : ''
+              }`}
+            />
+            <span
+              className={`absolute left-0 top-[9px] w-5 h-0.5 bg-current transition-all duration-300 ${
+                mobileMenuOpen ? 'opacity-0 scale-0' : ''
+              }`}
+            />
+            <span
+              className={`absolute left-0 top-[16px] w-5 h-0.5 bg-current transform transition-all duration-300 ${
+                mobileMenuOpen ? '-rotate-45 -translate-y-[7px]' : ''
+              }`}
+            />
+          </div>
+        </RippleButton>
       </div>
 
-      {mobileMenuOpen && (
-        <div className="md:hidden glass border-t border-[var(--border)]">
+      <div
+        className={`md:hidden overflow-hidden transition-all duration-300 ${
+          mobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+        }`}
+      >
+        <div className="glass border-t border-[var(--border)]">
           <nav className="flex flex-col p-4 gap-2">
-            {NAV_ITEMS.map((item) => (
+            {NAV_ITEMS.map((item, index) => (
               <button
                 key={item.id}
                 onClick={() => {
                   onNavigate(item.id);
                   setMobileMenuOpen(false);
                 }}
-                className={`font-mono text-sm tracking-wider uppercase text-left px-4 py-2 rounded transition-colors
+                className={`font-mono text-sm tracking-wider uppercase text-left px-4 py-2 rounded transition-all duration-200
                   ${currentSection === item.id
                     ? 'text-[var(--accent)] bg-[var(--accent-muted)]'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]'}`}
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]'}
+                  ${mobileMenuOpen ? 'animate-fade-in' : ''}`}
+                style={{ animationDelay: `${index * 0.05}s` }}
               >
                 {item.label}
               </button>
             ))}
           </nav>
         </div>
-      )}
+      </div>
     </header>
   );
 }
@@ -220,10 +307,17 @@ function TerminalComponent() {
 // ── Hero ─────────────────────────────────────────────────────────
 function Hero({ onNavigate, totalPlaying }: { onNavigate: (id: string) => void; totalPlaying: number | null }) {
   const [phrase, setPhrase] = useState(0);
+  const [phraseVisible, setPhraseVisible] = useState(true);
   const phrases = ['Systems Online', 'Code Compiled', 'Mission Ready'];
 
   useEffect(() => {
-    const interval = setInterval(() => setPhrase((p) => (p + 1) % phrases.length), 3000);
+    const interval = setInterval(() => {
+      setPhraseVisible(false);
+      setTimeout(() => {
+        setPhrase((p) => (p + 1) % phrases.length);
+        setPhraseVisible(true);
+      }, 200);
+    }, 3000);
     return () => clearInterval(interval);
   }, [phrases.length]);
 
@@ -232,7 +326,7 @@ function Hero({ onNavigate, totalPlaying }: { onNavigate: (id: string) => void; 
       <div className="max-w-6xl w-full grid lg:grid-cols-2 gap-16 items-center">
         <div className="space-y-8">
           <div className="space-y-4 animate-fade-in">
-            <div className="section-badge stagger-1">
+            <div className="section-badge stagger-1 hover:scale-105 transition-transform duration-200 cursor-default">
               <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse" />
               <span>
                 {totalPlaying != null && totalPlaying > 0
@@ -242,7 +336,7 @@ function Hero({ onNavigate, totalPlaying }: { onNavigate: (id: string) => void; 
             </div>
 
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-[var(--text-primary)] leading-tight stagger-2">
-              Water<span className="text-glow">.</span>Portfolio
+              Water<span className="text-glow animate-pulse">.</span>Portfolio
             </h1>
 
             <p className="text-lg text-[var(--text-secondary)] max-w-md stagger-3">
@@ -250,28 +344,30 @@ function Hero({ onNavigate, totalPlaying }: { onNavigate: (id: string) => void; 
               optimization.
             </p>
 
-            <div className="font-mono text-sm text-[var(--silver-muted)] stagger-4">
+            <div className="font-mono text-sm text-[var(--silver-muted)] stagger-4 h-6">
               <span className="text-[var(--accent)]">&gt;</span>{' '}
-              <span className="text-[var(--text-primary)]">{phrases[phrase]}</span>
+              <span className={`text-[var(--text-primary)] inline-block transition-all duration-200 ${phraseVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
+                {phrases[phrase]}
+              </span>
               <span className="animate-blink text-[var(--accent)]">_</span>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-4 animate-fade-in stagger-4">
-            <button onClick={() => onNavigate('projects')} className="btn btn-primary">
+            <RippleButton onClick={() => onNavigate('projects')} className="btn btn-primary">
               View Projects
-              <ArrowRight className="w-4 h-4" />
-            </button>
-            <button onClick={() => onNavigate('roblox')} className="btn btn-secondary">
-              <Activity className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4 btn-icon" />
+            </RippleButton>
+            <RippleButton onClick={() => onNavigate('roblox')} className="btn btn-secondary">
+              <Activity className="w-4 h-4 btn-icon" />
               Live Stats
-            </button>
+            </RippleButton>
           </div>
 
           <div className="grid grid-cols-3 gap-4 animate-fade-in stagger-5">
-            {SITE.stats.map((s) => (
-              <div key={s.label} className="text-center">
-                <div className="hud-value">{s.value}</div>
+            {SITE.stats.map((s, i) => (
+              <div key={s.label} className="text-center group cursor-default hover:scale-105 transition-transform duration-200">
+                <div className="hud-value group-hover:text-glow transition-colors">{s.value}</div>
                 <div className="hud-label">{s.label}</div>
               </div>
             ))}
@@ -288,19 +384,21 @@ function Hero({ onNavigate, totalPlaying }: { onNavigate: (id: string) => void; 
 
 // ── About ────────────────────────────────────────────────────────
 function About() {
+  const { ref, isVisible } = useScrollReveal();
+
   return (
-    <section id="about" className="min-h-screen flex items-center py-24 px-6">
+    <section ref={ref} id="about" className="min-h-screen flex items-center py-24 px-6">
       <div className="max-w-6xl mx-auto w-full">
-        <div className="grid lg:grid-cols-2 gap-12 items-start">
-          <div className="card card-accent p-6 space-y-6">
+        <div className={`grid lg:grid-cols-2 gap-12 items-start ${isVisible ? 'section-enter' : 'opacity-0'}`}>
+          <div className="card card-accent p-6 space-y-6 hover:shadow-2xl transition-shadow duration-300">
             <div className="flex items-center justify-between">
-              <span className="section-badge">Personnel File</span>
+              <span className="section-badge hover:scale-105 transition-transform cursor-default">Personnel File</span>
               <span className="font-mono text-[10px] text-[var(--silver-muted)]">CLEARANCE: LEVEL 1</span>
             </div>
 
             <div className="space-y-4">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded bg-[var(--bg-elevated)] border border-[var(--border)] flex items-center justify-center">
+                <div className="w-16 h-16 rounded bg-[var(--bg-elevated)] border border-[var(--border)] flex items-center justify-center transition-all duration-300 hover:scale-110 hover:border-[var(--accent)] hover:rotate-3">
                   <Code2 className="w-8 h-8 text-[var(--accent)]" />
                 </div>
                 <div>
@@ -310,22 +408,22 @@ function About() {
               </div>
 
               <div className="space-y-3 font-mono text-sm">
-                <div className="flex justify-between py-2 border-b border-[var(--border)]">
+                <div className="flex justify-between py-2 border-b border-[var(--border)] hover:border-[var(--accent)] transition-colors">
                   <span className="text-[var(--text-muted)]">Role</span>
                   <span className="text-[var(--text-secondary)]">Backend / UI / Gameplay</span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-[var(--border)]">
+                <div className="flex justify-between py-2 border-b border-[var(--border)] hover:border-[var(--accent)] transition-colors">
                   <span className="text-[var(--text-muted)]">Experience</span>
                   <span className="text-[var(--text-secondary)]">4+ Years</span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-[var(--border)]">
+                <div className="flex justify-between py-2 border-b border-[var(--border)] hover:border-[var(--accent)] transition-colors">
                   <span className="text-[var(--text-muted)]">Status</span>
                   <span className="flex items-center gap-2 text-[#22C55E]">
                     <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
                     Available
                   </span>
                 </div>
-                <div className="flex justify-between py-2">
+                <div className="flex justify-between py-2 hover:text-[var(--accent)] transition-colors">
                   <span className="text-[var(--text-muted)]">Discord</span>
                   <span className="text-[var(--text-secondary)]">{SITE.discord}</span>
                 </div>
@@ -334,7 +432,7 @@ function About() {
           </div>
 
           <div className="space-y-6">
-            <div className="section-badge">
+            <div className="section-badge inline-flex hover:scale-105 transition-transform cursor-default">
               <Shield className="w-3.5 h-3.5" />
               About
             </div>
@@ -354,7 +452,7 @@ function About() {
               but well-made.
             </p>
 
-            <div className="p-4 bg-[var(--bg-surface)] border-l-2 border-[var(--accent)] rounded-r">
+            <div className="p-4 bg-[var(--bg-surface)] border-l-2 border-[var(--accent)] rounded-r hover:border-l-4 transition-all duration-200 hover:bg-[var(--accent-muted)]">
               <p className="text-sm text-[var(--text-primary)] italic">
                 &quot;Clean systems lead to better gameplay. Better gameplay leads to happier players. Happy players
                 lead to better games.&quot;
@@ -362,8 +460,12 @@ function About() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {['Luau', 'DataStore', 'ProfileService', 'UI/UX', 'Figma', 'Optimization'].map((skill) => (
-                <span key={skill} className="tag">
+              {['Luau', 'DataStore', 'ProfileService', 'UI/UX', 'Figma', 'Optimization'].map((skill, i) => (
+                <span
+                  key={skill}
+                  className="tag hover:scale-105 hover:border-[var(--accent)] transition-all duration-200 cursor-default"
+                  style={{ animationDelay: `${i * 0.05}s` }}
+                >
                   {skill}
                 </span>
               ))}
@@ -656,32 +758,33 @@ function ProjectCard({ project, index }: { project: (typeof PROJECTS)[number]; i
             src={thumb}
             alt={`${project.title} preview`}
             crossOrigin="anonymous"
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:rotate-1"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <Code2 className="w-12 h-12 text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors" />
+            <Code2 className="w-12 h-12 text-[var(--text-muted)] group-hover:text-[var(--accent)] group-hover:scale-110 transition-all duration-300" />
           </div>
         )}
         {isYt && (
-          <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-deep)]/40 opacity-0 group-hover:opacity-100 transition-opacity">
-            <span className="w-12 h-12 rounded-full bg-[var(--accent)] flex items-center justify-center">
-              <Play className="w-5 h-5 text-white ml-0.5" />
+          <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-deep)]/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <span className="w-14 h-14 rounded-full bg-[var(--accent)] flex items-center justify-center transform scale-75 group-hover:scale-100 transition-transform duration-300 shadow-lg shadow-[var(--accent)]/30">
+              <Play className="w-6 h-6 text-white ml-0.5" />
             </span>
           </div>
         )}
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-deep)] via-transparent to-transparent opacity-60" />
       </div>
       <div className="p-5 space-y-3 flex-1 flex flex-col">
         <div className="flex justify-between items-start gap-2">
-          <h3 className="font-display font-bold text-[var(--text-primary)] leading-tight group-hover:text-[var(--accent)] transition-colors">
+          <h3 className="font-display font-bold text-[var(--text-primary)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300">
             {project.title}
           </h3>
-          <span className="tag shrink-0">{project.category}</span>
+          <span className="tag shrink-0 group-hover:border-[var(--accent)] transition-colors">{project.category}</span>
         </div>
         <p className="text-sm text-[var(--text-muted)] leading-relaxed flex-1">{project.description}</p>
         <div className="flex flex-wrap gap-1.5 pt-2">
           {project.tags.map((tag) => (
-            <span key={tag} className="text-[10px] font-mono text-[var(--silver-muted)]">
+            <span key={tag} className="text-[10px] font-mono text-[var(--silver-muted)] group-hover:text-[var(--text-secondary)] transition-colors">
               {tag}
             </span>
           ))}
@@ -694,14 +797,15 @@ function ProjectCard({ project, index }: { project: (typeof PROJECTS)[number]; i
 function Projects() {
   const categories = ['ALL', ...Array.from(new Set(PROJECTS.map((p) => p.category)))];
   const [filter, setFilter] = useState('ALL');
+  const { ref, isVisible } = useScrollReveal();
 
   const filtered = filter === 'ALL' ? PROJECTS : PROJECTS.filter((p) => p.category === filter);
 
   return (
-    <section id="projects" className="min-h-screen flex items-center py-24 px-6">
+    <section ref={ref} id="projects" className="min-h-screen flex items-center py-24 px-6">
       <div className="max-w-6xl mx-auto w-full space-y-12">
-        <div className="space-y-4">
-          <div className="section-badge">
+        <div className={`space-y-4 ${isVisible ? 'section-enter' : 'opacity-0'}`}>
+          <div className="section-badge hover:scale-105 transition-transform cursor-default">
             <Database className="w-3.5 h-3.5" />
             Project Database
           </div>
@@ -711,24 +815,27 @@ function Projects() {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className={`flex flex-wrap gap-2 ${isVisible ? 'animate-fade-in stagger-2' : 'opacity-0'}`}>
           {categories.map((cat) => (
-            <button
+            <RippleButton
               key={cat}
               onClick={() => setFilter(cat)}
-              className={`font-mono text-xs tracking-wider uppercase px-3 py-1.5 rounded transition-colors
-                ${filter === cat
-                  ? 'bg-[var(--accent)] text-white'
-                  : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border)] hover:border-[var(--accent)]'}`}
+              className={`filter-btn font-mono text-xs tracking-wider uppercase px-3 py-1.5 rounded transition-all duration-300 ${
+                filter === cat
+                  ? 'bg-[var(--accent)] text-white active shadow-lg shadow-[var(--accent)]/20'
+                  : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--text-secondary)]'
+              }`}
             >
               {cat}
-            </button>
+            </RippleButton>
           ))}
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((project, index) => (
-            <ProjectCard key={project.title} project={project} index={index} />
+            <div key={project.title} className={isVisible ? 'animate-fade-in' : 'opacity-0'} style={{ animationDelay: `${index * 0.1}s` }}>
+              <ProjectCard project={project} index={index} />
+            </div>
           ))}
         </div>
       </div>
@@ -749,34 +856,35 @@ function GalleryItemCard({
   return (
     <button
       onClick={onClick}
-      className="card overflow-hidden group flex flex-col text-left w-full"
+      className="card overflow-hidden group flex flex-col text-left w-full transform-gpu"
       style={{ animationDelay: `${index * 0.08}s` }}
     >
       <div className="relative h-48 bg-[var(--bg-elevated)] overflow-hidden">
         <img
           src={item.src}
           alt={item.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-deep)] via-transparent to-transparent opacity-60" />
-        <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 rounded bg-[var(--bg-deep)]/80 border border-[var(--border)] opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute inset-0 bg-[var(--accent)]/0 group-hover:bg-[var(--accent)]/10 transition-colors duration-300" />
+        <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 rounded bg-[var(--bg-deep)]/80 border border-[var(--border)] opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
           <Maximize2 className="w-3.5 h-3.5 text-[var(--accent)]" />
           <span className="font-mono text-[10px] text-[var(--text-muted)]">View</span>
         </div>
         <div className="absolute bottom-3 left-3">
-          <span className="tag bg-[var(--accent-muted)] border-[var(--border-accent)] text-[var(--accent-bright)]">
+          <span className="tag bg-[var(--accent-muted)] border-[var(--border-accent)] text-[var(--accent-bright)] group-hover:scale-105 transition-transform">
             {item.category}
           </span>
         </div>
       </div>
       <div className="p-4 space-y-2">
-        <h3 className="font-display font-bold text-[var(--text-primary)] leading-tight group-hover:text-[var(--accent)] transition-colors">
+        <h3 className="font-display font-bold text-[var(--text-primary)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300">
           {item.title}
         </h3>
         <p className="text-xs text-[var(--text-muted)] leading-relaxed line-clamp-2">{item.description}</p>
         <div className="flex flex-wrap gap-1 pt-1">
           {item.tags.map((tag) => (
-            <span key={tag} className="text-[10px] font-mono text-[var(--silver-muted)]">
+            <span key={tag} className="text-[10px] font-mono text-[var(--silver-muted)] group-hover:text-[var(--text-secondary)] transition-colors">
               {tag}
             </span>
           ))}
@@ -817,33 +925,33 @@ function GalleryLightbox({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 animate-fade-in-fast">
-      <div className="absolute inset-0 bg-[var(--bg-deep)]/95 backdrop-blur-sm" onClick={onClose} />
-      <button
+      <div className="absolute inset-0 bg-[var(--bg-deep)]/95 backdrop-blur-md" onClick={onClose} />
+      <RippleButton
         onClick={onClose}
-        className="absolute top-4 right-4 md:top-6 md:right-6 z-10 p-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
+        className="absolute top-4 right-4 md:top-6 md:right-6 z-10 p-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--accent)] transition-all duration-300 hover:scale-110 bg-transparent"
         aria-label="Close lightbox"
       >
         <CloseIcon className="w-5 h-5 text-[var(--text-secondary)]" />
-      </button>
+      </RippleButton>
       {hasPrev && (
-        <button
+        <RippleButton
           onClick={onPrev}
-          className="absolute left-4 md:left-6 z-10 p-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
+          className="absolute left-4 md:left-6 z-10 p-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--accent)] transition-all duration-300 hover:scale-110 bg-transparent"
           aria-label="Previous image"
         >
           <ArrowRight className="w-5 h-5 text-[var(--text-secondary)] rotate-180" />
-        </button>
+        </RippleButton>
       )}
       {hasNext && (
-        <button
+        <RippleButton
           onClick={onNext}
-          className="absolute right-4 md:right-16 z-10 p-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
+          className="absolute right-4 md:right-16 z-10 p-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--accent)] transition-all duration-300 hover:scale-110 bg-transparent"
           aria-label="Next image"
         >
           <ArrowRight className="w-5 h-5 text-[var(--text-secondary)]" />
-        </button>
+        </RippleButton>
       )}
-      <div className="relative z-10 max-w-5xl w-full flex flex-col gap-4">
+      <div className="relative z-10 max-w-5xl w-full flex flex-col gap-4 animate-scale-in">
         <div className="card overflow-hidden">
           <img
             src={item.src}
@@ -851,7 +959,7 @@ function GalleryLightbox({
             className="w-full max-h-[70vh] object-contain bg-[var(--bg-elevated)]"
           />
         </div>
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 px-2">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 px-2 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <div className="space-y-1">
             <span className="tag bg-[var(--accent-muted)] border-[var(--border-accent)] text-[var(--accent-bright)]">
               {item.category}
@@ -877,6 +985,7 @@ function Gallery() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const categories = ['ALL', ...Array.from(new Set(GALLERY.map((p) => p.category)))];
   const [filter, setFilter] = useState('ALL');
+  const { ref, isVisible } = useScrollReveal();
 
   const filtered = filter === 'ALL' ? GALLERY : GALLERY.filter((p) => p.category === filter);
 
@@ -902,10 +1011,10 @@ function Gallery() {
   };
 
   return (
-    <section id="gallery" className="min-h-screen flex items-center py-24 px-6">
+    <section ref={ref} id="gallery" className="min-h-screen flex items-center py-24 px-6">
       <div className="max-w-6xl mx-auto w-full space-y-12">
-        <div className="space-y-4">
-          <div className="section-badge">
+        <div className={`space-y-4 ${isVisible ? 'section-enter' : 'opacity-0'}`}>
+          <div className="section-badge hover:scale-105 transition-transform cursor-default">
             <ImageIcon className="w-3.5 h-3.5" />
             UI Gallery
           </div>
@@ -915,29 +1024,31 @@ function Gallery() {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className={`flex flex-wrap gap-2 ${isVisible ? 'animate-fade-in stagger-2' : 'opacity-0'}`}>
           {categories.map((cat) => (
-            <button
+            <RippleButton
               key={cat}
               onClick={() => setFilter(cat)}
-              className={`font-mono text-xs tracking-wider uppercase px-3 py-1.5 rounded transition-colors
-                ${filter === cat
-                  ? 'bg-[var(--accent)] text-white'
-                  : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border)] hover:border-[var(--accent)]'}`}
+              className={`filter-btn font-mono text-xs tracking-wider uppercase px-3 py-1.5 rounded transition-all duration-300 ${
+                filter === cat
+                  ? 'bg-[var(--accent)] text-white active shadow-lg shadow-[var(--accent)]/20'
+                  : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--text-secondary)]'
+              }`}
             >
               {cat}
-            </button>
+            </RippleButton>
           ))}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filtered.map((item, index) => (
-            <GalleryItemCard
-              key={item.title}
-              item={item}
-              index={index}
-              onClick={() => handleSelect(item, index)}
-            />
+            <div key={item.title} className={isVisible ? 'animate-fade-in' : 'opacity-0'} style={{ animationDelay: `${index * 0.08}s` }}>
+              <GalleryItemCard
+                item={item}
+                index={index}
+                onClick={() => handleSelect(item, index)}
+              />
+            </div>
           ))}
         </div>
 
@@ -958,11 +1069,13 @@ function Gallery() {
 
 // ── History ──────────────────────────────────────────────────────
 function History() {
+  const { ref, isVisible } = useScrollReveal();
+
   return (
-    <section id="history" className="min-h-screen flex items-center py-24 px-6">
+    <section ref={ref} id="history" className="min-h-screen flex items-center py-24 px-6">
       <div className="max-w-3xl mx-auto w-full space-y-12">
-        <div className="text-center space-y-4">
-          <div className="section-badge">
+        <div className={`text-center space-y-4 ${isVisible ? 'section-enter' : 'opacity-0'}`}>
+          <div className="section-badge inline-flex hover:scale-105 transition-transform cursor-default">
             <Calendar className="w-3.5 h-3.5" />
             Service Record
           </div>
@@ -971,18 +1084,19 @@ function History() {
         </div>
 
         <div className="relative">
-          <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-px bg-[var(--border)]" />
+          <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[var(--border)] to-transparent" />
           <div className="space-y-8">
             {TIMELINE.map((item, index) => (
               <div
                 key={index}
-                className={`relative flex items-center gap-6 ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'}`}
+                className={`relative flex items-center gap-6 ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'} ${isVisible ? 'animate-fade-in' : 'opacity-0'}`}
+                style={{ animationDelay: `${index * 0.15}s` }}
               >
                 <div
-                  className={`absolute left-4 md:left-1/2 w-3 h-3 rounded-full border-2 border-[var(--bg-deep)] -translate-x-1/2 z-10 ${item.accent ? 'bg-[var(--accent)]' : 'bg-[var(--silver-muted)]'}`}
+                  className={`absolute left-4 md:left-1/2 w-4 h-4 rounded-full border-2 border-[var(--bg-deep)] -translate-x-1/2 z-10 transition-all duration-500 ${item.accent ? 'bg-[var(--accent)] shadow-lg shadow-[var(--accent)]/40' : 'bg-[var(--silver-muted)]'} hover:scale-125`}
                 />
                 <div
-                  className={`card ml-12 md:ml-0 md:w-[calc(50%-2rem)] p-5 ${item.dim ? 'opacity-70' : ''} ${index % 2 === 0 ? 'md:text-right' : 'md:text-left'}`}
+                  className={`card ml-12 md:ml-0 md:w-[calc(50%-2rem)] p-5 ${item.dim ? 'opacity-70' : ''} ${index % 2 === 0 ? 'md:text-right' : 'md:text-left'} hover:shadow-xl transition-shadow duration-300`}
                 >
                   <div className="font-mono text-xs text-[var(--accent)] mb-2">{item.period}</div>
                   <h3 className="font-display font-bold text-[var(--text-primary)] mb-1">{item.title}</h3>
@@ -990,7 +1104,7 @@ function History() {
                   {item.tags.length > 0 && (
                     <div className={`flex flex-wrap gap-1.5 pt-3 ${index % 2 === 0 ? 'md:justify-end' : ''}`}>
                       {item.tags.map((tag) => (
-                        <span key={tag} className="tag">
+                        <span key={tag} className="tag hover:scale-105 hover:border-[var(--accent)] transition-all duration-200">
                           {tag}
                         </span>
                       ))}
@@ -1009,6 +1123,7 @@ function History() {
 // ── Contact ──────────────────────────────────────────────────────
 function Contact() {
   const [copied, setCopied] = useState(false);
+  const { ref, isVisible } = useScrollReveal();
 
   const handleCopy = async () => {
     try {
@@ -1021,10 +1136,10 @@ function Contact() {
   };
 
   return (
-    <section id="contact" className="min-h-screen flex items-center py-24 px-6">
+    <section ref={ref} id="contact" className="min-h-screen flex items-center py-24 px-6">
       <div className="max-w-2xl mx-auto w-full space-y-12 text-center">
-        <div className="space-y-4">
-          <div className="section-badge inline-flex">
+        <div className={`space-y-4 ${isVisible ? 'section-enter' : 'opacity-0'}`}>
+          <div className="section-badge inline-flex hover:scale-105 transition-transform cursor-default">
             <Radio className="w-3.5 h-3.5" />
             Contact
           </div>
@@ -1034,7 +1149,7 @@ function Contact() {
           </p>
         </div>
 
-        <div className="inline-flex items-center gap-6 px-6 py-3 bg-[var(--bg-surface)] border border-[var(--border)] rounded">
+        <div className={`inline-flex items-center gap-6 px-6 py-3 bg-[var(--bg-surface)] border border-[var(--border)] rounded ${isVisible ? 'animate-fade-in stagger-2' : 'opacity-0'}`}>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse" />
             <span className="font-mono text-xs text-[#22C55E]">ONLINE</span>
@@ -1043,49 +1158,49 @@ function Contact() {
           <div className="font-mono text-xs text-[var(--text-muted)]">Response: Fast</div>
         </div>
 
-        <div className="space-y-4">
-          <button
+        <div className={`space-y-4 ${isVisible ? 'animate-fade-in stagger-3' : 'opacity-0'}`}>
+          <RippleButton
             onClick={handleCopy}
-            className="w-full card p-5 flex items-center gap-4 hover:border-[var(--accent)] transition-colors text-left group"
+            className="w-full card p-5 flex items-center gap-4 hover:border-[var(--accent)] transition-all duration-300 text-left group contact-btn bg-transparent border-none"
           >
-            <div className="w-12 h-12 rounded bg-[#5865F2]/10 flex items-center justify-center">
+            <div className="w-12 h-12 rounded bg-[#5865F2]/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
               <svg className="w-6 h-6 text-[#5865F2]" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 8.776-.32 13.043.099 17.262a.08.08 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 14.75c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
               </svg>
             </div>
             <div className="flex-1">
               <div className="font-mono text-xs text-[var(--text-muted)] mb-1">Discord</div>
-              <div className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">
+              <div className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors duration-300">
                 {SITE.discord}
               </div>
             </div>
             {copied ? (
-              <Check className="w-5 h-5 text-[#22C55E]" />
+              <Check className="w-5 h-5 text-[#22C55E] animate-scale-in" />
             ) : (
-              <Copy className="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--accent)]" />
+              <Copy className="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors duration-300" />
             )}
-          </button>
+          </RippleButton>
 
           <a
             href={SITE.robloxProfile}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full card p-5 flex items-center gap-4 hover:border-[var(--accent)] transition-colors group"
+            className="w-full card p-5 flex items-center gap-4 hover:border-[var(--accent)] transition-all duration-300 group"
           >
-            <div className="w-12 h-12 rounded bg-[var(--accent-muted)] flex items-center justify-center">
+            <div className="w-12 h-12 rounded bg-[var(--accent-muted)] flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
               <ExternalLink className="w-6 h-6 text-[var(--accent)]" />
             </div>
             <div className="flex-1 text-left">
               <div className="font-mono text-xs text-[var(--text-muted)] mb-1">Roblox Profile</div>
-              <div className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">
+              <div className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors duration-300">
                 View Profile
               </div>
             </div>
-            <ArrowRight className="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--accent)]" />
+            <ArrowRight className="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--accent)] group-hover:translate-x-1 transition-all duration-300" />
           </a>
         </div>
 
-        <div className="pt-8 space-y-2 text-[var(--text-muted)]">
+        <div className={`pt-8 space-y-2 text-[var(--text-muted)] ${isVisible ? 'animate-fade-in stagger-4' : 'opacity-0'}`}>
           <div className="font-mono text-[10px] tracking-wider">WATER.PORTFOLIO // ROBLOX DEVELOPER</div>
           <div className="font-mono text-[10px] opacity-50">Built with React + Tailwind</div>
         </div>
