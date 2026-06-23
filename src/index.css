@@ -11,6 +11,7 @@
   --bg-elevated: #1E222B;
 
   --accent: #B91C1C;
+  --accent-bright: #DC2626;
 
   --silver: #94A3B8;
   --silver-muted: #64748B;
@@ -19,13 +20,13 @@
   --text-secondary: #A1A1AA;
   --text-muted: #71717A;
 
-  --border: rgba(148, 163, 184, 0.12);
-  --border-accent: rgba(185, 28, 28, 0.3);
+  --border: rgba(148, 163, 184, 0.15);
+  --border-accent: rgba(185, 28, 28, 0.4);
 
   --nav-height: 72px;
 
   font-family: 'Inter', system-ui, sans-serif;
-  line-height: 1.65;
+  line-height: 1.7;
   font-weight: 400;
   color: var(--text-primary);
   background-color: var(--bg-base);
@@ -44,6 +45,10 @@ body {
   margin: 0;
   min-height: 100vh;
   background-color: var(--bg-base);
+  /* Subtle texture pattern */
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(148, 163, 184, 0.03) 1px, transparent 0);
+  background-size: 32px 32px;
 }
 
 #root {
@@ -91,17 +96,17 @@ body {
 
 /* 1. Hero entrance animation */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 /* 2. Scroll-triggered reveal for projects */
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* 3. Terminal cursor blink */
+/* 3. Cursor blink */
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
@@ -118,7 +123,7 @@ body {
 }
 
 .animate-fade-in {
-  animation: fadeIn 500ms ease-out both;
+  animation: fadeIn 600ms ease-out both;
 }
 
 .animate-slide-up {
@@ -129,45 +134,47 @@ body {
   animation: blink 1s step-end infinite;
 }
 
-.stagger-1 { animation-delay: 0.05s; }
-.stagger-2 { animation-delay: 0.1s; }
-.stagger-3 { animation-delay: 0.15s; }
-.stagger-4 { animation-delay: 0.2s; }
+.stagger-1 { animation-delay: 0.08s; }
+.stagger-2 { animation-delay: 0.16s; }
+.stagger-3 { animation-delay: 0.24s; }
+.stagger-4 { animation-delay: 0.32s; }
+.stagger-5 { animation-delay: 0.40s; }
 
-/* Header - flat opaque, no glassmorphism */
+/* Header - subtle depth */
 .header-bg {
-  background: var(--bg-surface);
+  background: rgba(13, 15, 20, 0.95);
   border-bottom: 1px solid var(--border);
 }
 
-/* Cards - flat opaque surfaces */
+/* Cards - considered surfaces */
 .card {
   position: relative;
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  transition: border-color 150ms ease-out;
+  border-radius: 6px;
+  transition: border-color 200ms ease-out, box-shadow 200ms ease-out;
 }
 
 .card:hover {
   border-color: var(--border-accent);
+  box-shadow: 0 4px 24px -8px rgba(0, 0, 0, 0.4);
 }
 
 .card-accent {
   border-top: 2px solid var(--accent);
 }
 
-/* Buttons - simple 150ms transitions */
+/* Buttons - deliberate interaction */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 12px 24px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 600;
   font-size: 14px;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   border-radius: 4px;
   transition: all 150ms ease-out;
@@ -178,10 +185,12 @@ body {
 .btn-primary {
   background: var(--accent);
   color: white;
+  box-shadow: 0 2px 12px -4px rgba(185, 28, 28, 0.5);
 }
 
 .btn-primary:hover {
-  background: #C42525;
+  background: var(--accent-bright);
+  box-shadow: 0 4px 16px -4px rgba(185, 28, 28, 0.6);
 }
 
 .btn-secondary {
@@ -193,6 +202,7 @@ body {
 .btn-secondary:hover {
   border-color: var(--accent);
   color: var(--text-primary);
+  background: rgba(185, 28, 28, 0.05);
 }
 
 /* Terminal */
@@ -246,44 +256,57 @@ body {
 .section-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 14px;
-  background: rgba(185, 28, 28, 0.1);
+  gap: 8px;
+  padding: 6px 16px;
+  background: rgba(185, 28, 28, 0.08);
   border: 1px solid var(--border-accent);
-  border-radius: 2px;
+  border-radius: 3px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.12em;
   color: #DC2626;
   text-transform: uppercase;
 }
 
 .section-title {
   font-family: 'Rajdhani', sans-serif;
-  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-size: clamp(2rem, 5vw, 3rem);
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   color: var(--text-primary);
-  line-height: 1.2;
+  line-height: 1.15;
+}
+
+.section-accent {
+  color: var(--accent);
 }
 
 /* Tags */
 .tag {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
+  padding: 5px 12px;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
-  border-radius: 2px;
+  border-radius: 3px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
-  transition: border-color 150ms ease-out;
+  transition: border-color 150ms ease-out, color 150ms ease-out;
 }
 
 .tag:hover {
-  border-color: var(--accent);
+  border-color: var(--border-accent);
+  color: var(--text-secondary);
+}
+
+/* Section divider */
+.section-divider {
+  width: 48px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  margin: 16px 0;
 }
 
 /* Line clamp */
@@ -332,12 +355,12 @@ body {
 /* Filter buttons */
 .filter-btn {
   display: inline-flex;
-  padding: 4px 12px;
+  padding: 6px 14px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-radius: 2px;
+  letter-spacing: 0.06em;
+  border-radius: 3px;
   cursor: pointer;
   transition: all 150ms ease-out;
   border: 1px solid var(--border);
@@ -346,7 +369,7 @@ body {
 }
 
 .filter-btn:hover {
-  border-color: var(--accent);
+  border-color: rgba(185, 28, 28, 0.3);
   color: var(--text-secondary);
 }
 
@@ -356,11 +379,46 @@ body {
   color: white;
 }
 
-/* Skills list - no progress bars */
+/* Skills list */
 .skills-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
+}
+
+/* Interactive stats */
+.stat-item {
+  transition: transform 150ms ease-out;
+}
+
+.stat-item:hover {
+  transform: translateY(-2px);
+}
+
+.stat-item:hover .hud-value {
+  color: var(--accent-bright);
+}
+
+/* Project card image */
+.project-image {
+  transition: opacity 200ms ease-out;
+}
+
+.card:hover .project-image {
+  opacity: 0.9;
+}
+
+/* Timeline node */
+.timeline-node {
+  transition: transform 150ms ease-out, box-shadow 150ms ease-out;
+}
+
+.timeline-node.accent {
+  box-shadow: 0 0 0 4px rgba(185, 28, 28, 0.1);
+}
+
+.timeline-node:hover {
+  transform: scale(1.2);
 }
 
 /* Responsive */
@@ -370,6 +428,6 @@ body {
   }
 
   .section-title {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
   }
 }
