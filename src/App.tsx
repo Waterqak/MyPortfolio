@@ -1,8 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Terminal,
   Database,
-  Cpu,
   Shield,
   Radio,
   ArrowRight,
@@ -21,13 +19,10 @@ import {
   Activity,
   Play,
   Image as ImageIcon,
-  Maximize2,
-  X as CloseIcon,
 } from 'lucide-react';
 import {
   SITE,
   SKILLS,
-  FUN_SKILLS,
   TIMELINE,
   PROJECTS,
   GALLERY,
@@ -36,30 +31,13 @@ import {
 } from './config';
 import { useRoblox, fmtNum, type RobloxGame } from './useRoblox';
 
-// ── Color maps (kept within the steel / crimson / brass palette) ──
 const COLOR_TEXT: Record<ProjectColor, string> = {
-  gold: 'text-[var(--brass-bright)]',
-  blue: 'text-[var(--silver-bright)]',
-  purple: 'text-[var(--accent-bright)]',
+  gold: 'text-[#CA8A04]',
+  blue: 'text-[#94A3B8]',
+  purple: 'text-[#DC2626]',
   green: 'text-[#22C55E]',
-  red: 'text-[var(--accent-bright)]',
-  gray: 'text-[var(--text-muted)]',
-};
-const COLOR_BORDER_TOP: Record<ProjectColor, string> = {
-  gold: 'border-t-[var(--brass)]',
-  blue: 'border-t-[var(--silver)]',
-  purple: 'border-t-[var(--accent)]',
-  green: 'border-t-[#22C55E]',
-  red: 'border-t-[var(--accent)]',
-  gray: 'border-t-[var(--silver-muted)]',
-};
-const COLOR_FILL: Record<ProjectColor, string> = {
-  gold: 'var(--brass-bright)',
-  blue: 'var(--silver)',
-  purple: 'var(--accent)',
-  green: '#22C55E',
-  red: 'var(--accent)',
-  gray: 'var(--silver-muted)',
+  red: 'text-[#DC2626]',
+  gray: 'text-[#64748B]',
 };
 
 const NAV_ITEMS = [
@@ -73,309 +51,93 @@ const NAV_ITEMS = [
   { id: 'contact', label: 'Contact' },
 ];
 
-const TERMINAL_COMMANDS: Record<string, string> = {
-  help: 'Available commands: help, skills, projects, about, clear, status',
-  skills: 'Luau (98%), Backend (95%), Gameplay (92%), UI/UX (90%)',
-  projects: 'Chillin Place, Escape Lava, Operation: Azure Rift, Yan-Chan Simulator',
-  about: 'Water - Roblox developer focused on backend systems, UI & gameplay',
-  status: 'System Online | Live stats syncing | Accepting commissions',
-  clear: '',
-};
-
 function ytId(url: string): string | null {
   return url.match(/(?:youtu\.be\/|v=)([\w-]{6,})/)?.[1] ?? null;
-}
-
-// ── Ripple Button Component ──────────────────────────────────────────
-function RippleButton({
-  children,
-  onClick,
-  className = '',
-  ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { children: React.ReactNode }) {
-  const buttonRef = useRef<HTMLButtonElement>(null);
-
-  const handleClick = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
-      const button = buttonRef.current;
-      if (!button) return;
-
-      const rect = button.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-
-      const ripple = document.createElement('span');
-      ripple.className = 'btn-ripple';
-      ripple.style.left = `${x}px`;
-      ripple.style.top = `${y}px`;
-      ripple.style.width = '20px';
-      ripple.style.height = '20px';
-
-      button.appendChild(ripple);
-      setTimeout(() => ripple.remove(), 600);
-
-      onClick?.(e);
-    },
-    [onClick]
-  );
-
-  return (
-    <button ref={buttonRef} onClick={handleClick} className={className} {...props}>
-      {children}
-    </button>
-  );
-}
-
-// ── Scroll Reveal Hook ─────────────────────────────────────────────────
-function useScrollReveal(threshold = 0.1) {
-  const ref = useRef<HTMLElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [threshold]);
-
-  return { ref, isVisible };
 }
 
 // ── Header ───────────────────────────────────────────────────────
 function Header({ currentSection, onNavigate }: { currentSection: string; onNavigate: (id: string) => void }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-[var(--border)]">
-      <div className="max-w-6xl mx-auto px-6 h-[var(--nav-height)] flex items-center justify-between">
-        <RippleButton
-          onClick={() => onNavigate('hero')}
-          className="flex items-center gap-3 hover:opacity-80 transition-all duration-200 bg-transparent border-none"
-        >
-          <div className="w-9 h-9 rounded bg-[var(--bg-surface)] border border-[var(--border-accent)] flex items-center justify-center transition-transform duration-300 hover:scale-110 hover:rotate-3 hover:shadow-lg hover:shadow-[var(--accent)]/20">
-            <Database className="w-5 h-5 text-[var(--accent)]" />
+    <header className="fixed top-0 left-0 right-0 z-50 header-bg">
+      <div className="max-w-4xl mx-auto px-6 h-[var(--nav-height)] flex items-center justify-between">
+        <button onClick={() => onNavigate('hero')} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <div className="w-8 h-8 rounded bg-[var(--bg-elevated)] border border-[var(--border)] flex items-center justify-center">
+            <Database className="w-4 h-4 text-[var(--accent)]" />
           </div>
-          <span className="font-display font-bold text-lg tracking-wide">
+          <span className="font-display font-bold text-lg">
             <span className="text-[var(--text-primary)]">Water</span>
-            <span className="text-[var(--silver-muted)]">.Portfolio</span>
+            <span className="text-[var(--text-muted)]">.Portfolio</span>
           </span>
-        </RippleButton>
+        </button>
 
-        <nav className="hidden md:flex items-center gap-7">
+        <nav className="hidden md:flex items-center gap-6">
           {NAV_ITEMS.map((item) => (
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              onMouseEnter={() => setHoveredItem(item.id)}
-              onMouseLeave={() => setHoveredItem(null)}
-              className={`nav-item font-mono text-xs tracking-widest uppercase transition-all duration-300
-                ${currentSection === item.id ? 'text-[var(--accent)] active' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}
+              className={`font-mono text-xs tracking-wider uppercase transition-colors ${
+                currentSection === item.id ? 'text-[var(--accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              }`}
             >
-              <span className="relative z-10">{item.label}</span>
-              {(currentSection === item.id || hoveredItem === item.id) && (
-                <span className="absolute -bottom-2 left-0 right-0 h-px bg-[var(--accent)] shadow-[0_0_8px_rgba(220,38,38,0.5)] animate-fade-in-fast" />
-              )}
+              {item.label}
             </button>
           ))}
         </nav>
 
-        <RippleButton
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-2 text-[var(--text-secondary)] bg-transparent border-none transition-transform duration-300 hover:scale-110"
-          aria-label="Toggle navigation menu"
-        >
-          <div className="relative w-5 h-5">
-            <span
-              className={`absolute left-0 top-0.5 w-5 h-0.5 bg-current transform transition-all duration-300 ${
-                mobileMenuOpen ? 'rotate-45 translate-y-[7px]' : ''
-              }`}
-            />
-            <span
-              className={`absolute left-0 top-[9px] w-5 h-0.5 bg-current transition-all duration-300 ${
-                mobileMenuOpen ? 'opacity-0 scale-0' : ''
-              }`}
-            />
-            <span
-              className={`absolute left-0 top-[16px] w-5 h-0.5 bg-current transform transition-all duration-300 ${
-                mobileMenuOpen ? '-rotate-45 -translate-y-[7px]' : ''
-              }`}
-            />
-          </div>
-        </RippleButton>
+        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 text-[var(--text-secondary)]">
+          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
       </div>
 
-      <div
-        className={`md:hidden overflow-hidden transition-all duration-300 ${
-          mobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-        }`}
-      >
-        <div className="glass border-t border-[var(--border)]">
-          <nav className="flex flex-col p-4 gap-2">
-            {NAV_ITEMS.map((item, index) => (
+      {mobileMenuOpen && (
+        <div className="md:hidden header-bg border-t border-[var(--border)]">
+          <nav className="flex flex-col p-4 gap-1">
+            {NAV_ITEMS.map((item) => (
               <button
                 key={item.id}
-                onClick={() => {
-                  onNavigate(item.id);
-                  setMobileMenuOpen(false);
-                }}
-                className={`font-mono text-sm tracking-wider uppercase text-left px-4 py-2 rounded transition-all duration-200
-                  ${currentSection === item.id
-                    ? 'text-[var(--accent)] bg-[var(--accent-muted)]'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]'}
-                  ${mobileMenuOpen ? 'animate-fade-in' : ''}`}
-                style={{ animationDelay: `${index * 0.05}s` }}
+                onClick={() => { onNavigate(item.id); setMobileMenuOpen(false); }}
+                className={`font-mono text-sm tracking-wider uppercase text-left px-4 py-2 rounded transition-colors ${
+                  currentSection === item.id ? 'text-[var(--accent)] bg-[rgba(185,28,28,0.1)]' : 'text-[var(--text-muted)]'
+                }`}
               >
                 {item.label}
               </button>
             ))}
           </nav>
         </div>
-      </div>
+      )}
     </header>
   );
 }
 
-// ── Terminal ─────────────────────────────────────────────────────
-function TerminalComponent() {
-  const [input, setInput] = useState('');
-  const [output, setOutput] = useState<string[]>(['$ System initialized. Type "help" for commands.']);
-  const outputRef = useRef<HTMLDivElement>(null);
-
-  const handleCommand = (cmd: string) => {
-    const trimmed = cmd.trim().toLowerCase();
-    if (trimmed === 'clear') {
-      setOutput([]);
-    } else if (TERMINAL_COMMANDS[trimmed]) {
-      setOutput((prev) => [...prev, `> ${cmd}`, TERMINAL_COMMANDS[trimmed]]);
-    } else {
-      setOutput((prev) => [...prev, `> ${cmd}`, `Command not found: ${cmd}`]);
-    }
-    setInput('');
-  };
-
-  useEffect(() => {
-    if (outputRef.current) outputRef.current.scrollTop = outputRef.current.scrollHeight;
-  }, [output]);
-
-  return (
-    <div className="terminal">
-      <div className="terminal-header">
-        <div className="flex items-center gap-2">
-          <Terminal className="w-3.5 h-3.5 text-[var(--accent)]" />
-          <span className="font-mono text-[10px] tracking-wider text-[var(--text-muted)] uppercase">
-            Command Interface
-          </span>
-        </div>
-        <div className="flex gap-1.5">
-          <div className="terminal-dot bg-[#EF4444]" />
-          <div className="terminal-dot bg-[#EAB308]" />
-          <div className="terminal-dot bg-[#22C55E]" />
-        </div>
-      </div>
-      <div ref={outputRef} className="terminal-body h-40 overflow-y-auto text-[var(--text-secondary)]">
-        {output.map((line, i) => (
-          <div key={i} className={line.startsWith('>') ? 'text-[var(--silver)]' : ''}>
-            {line}
-          </div>
-        ))}
-      </div>
-      <div className="border-t border-[var(--border)] px-4 py-3 flex items-center gap-2">
-        <span className="text-[var(--accent)] font-mono">$</span>
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleCommand(input)}
-          placeholder="Enter command..."
-          aria-label="Terminal command input"
-          className="flex-1 bg-transparent border-none outline-none font-mono text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
-        />
-        <span className="w-2 h-4 bg-[var(--accent)] animate-blink" />
-      </div>
-    </div>
-  );
-}
-
 // ── Hero ─────────────────────────────────────────────────────────
-function Hero({ onNavigate, totalPlaying }: { onNavigate: (id: string) => void; totalPlaying: number | null }) {
-  const [phrase, setPhrase] = useState(0);
-  const [phraseVisible, setPhraseVisible] = useState(true);
-  const phrases = ['Systems Online', 'Code Compiled', 'Mission Ready'];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPhraseVisible(false);
-      setTimeout(() => {
-        setPhrase((p) => (p + 1) % phrases.length);
-        setPhraseVisible(true);
-      }, 200);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [phrases.length]);
-
+function Hero({ onNavigate }: { onNavigate: (id: string) => void }) {
   return (
-    <section id="hero" className="min-h-screen flex items-center justify-center pt-[var(--nav-height)] px-6">
-      <div className="max-w-6xl w-full grid lg:grid-cols-2 gap-16 items-center">
-        <div className="space-y-8">
-          <div className="space-y-4 animate-fade-in">
-            <div className="section-badge stagger-1 hover:scale-105 transition-transform duration-200 cursor-default">
-              <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse" />
-              <span>
-                {totalPlaying != null && totalPlaying > 0
-                  ? `${fmtNum(totalPlaying)} playing my games now`
-                  : 'Available for commissions'}
-              </span>
-            </div>
-
-            <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-[var(--text-primary)] leading-tight stagger-2">
-              Water<span className="text-glow animate-pulse">.</span>Portfolio
-            </h1>
-
-            <p className="text-lg text-[var(--text-secondary)] max-w-md stagger-3">
-              Roblox developer focused on backend systems, UI design, gameplay mechanics, and performance
-              optimization.
-            </p>
-
-            <div className="font-mono text-sm text-[var(--silver-muted)] stagger-4 h-6">
-              <span className="text-[var(--accent)]">&gt;</span>{' '}
-              <span className={`text-[var(--text-primary)] inline-block transition-all duration-200 ${phraseVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
-                {phrases[phrase]}
-              </span>
-              <span className="animate-blink text-[var(--accent)]">_</span>
-            </div>
+    <section id="hero" className="min-h-[90vh] flex items-center pt-[var(--nav-height)] px-6">
+      <div className="max-w-3xl mx-auto w-full">
+        <div className="space-y-6 animate-fade-in">
+          <div className="section-badge stagger-1">Available for commissions</div>
+          <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight text-[var(--text-primary)] leading-tight stagger-2">
+            Water<span className="text-[var(--accent)]">.</span>Portfolio
+          </h1>
+          <p className="text-lg text-[var(--text-secondary)] max-w-lg stagger-3">
+            Roblox developer focused on backend systems, UI design, gameplay mechanics, and performance optimization.
+          </p>
+          <div className="pt-4 stagger-4">
+            <button onClick={() => onNavigate('projects')} className="btn btn-primary">
+              View Projects <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
-
-          <div className="flex flex-wrap gap-4 animate-fade-in stagger-4">
-            <RippleButton onClick={() => onNavigate('projects')} className="btn btn-primary">
-              View Projects
-              <ArrowRight className="w-4 h-4 btn-icon" />
-            </RippleButton>
-            <RippleButton onClick={() => onNavigate('roblox')} className="btn btn-secondary">
-              <Activity className="w-4 h-4 btn-icon" />
-              Live Stats
-            </RippleButton>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4 animate-fade-in stagger-5">
-            {SITE.stats.map((s, i) => (
-              <div key={s.label} className="text-center group cursor-default hover:scale-105 transition-transform duration-200">
-                <div className="hud-value group-hover:text-glow transition-colors">{s.value}</div>
+          <div className="grid grid-cols-3 gap-6 pt-8 stagger-5">
+            {SITE.stats.map((s) => (
+              <div key={s.label}>
+                <div className="hud-value">{s.value}</div>
                 <div className="hud-label">{s.label}</div>
               </div>
             ))}
           </div>
-        </div>
-
-        <div className="hidden lg:block animate-slide-right">
-          <TerminalComponent />
         </div>
       </div>
     </section>
@@ -384,90 +146,56 @@ function Hero({ onNavigate, totalPlaying }: { onNavigate: (id: string) => void; 
 
 // ── About ────────────────────────────────────────────────────────
 function About() {
-  const { ref, isVisible } = useScrollReveal();
-
   return (
-    <section ref={ref} id="about" className="min-h-screen flex items-center py-24 px-6">
-      <div className="max-w-6xl mx-auto w-full">
-        <div className={`grid lg:grid-cols-2 gap-12 items-start ${isVisible ? 'section-enter' : 'opacity-0'}`}>
-          <div className="card card-accent p-6 space-y-6 hover:shadow-2xl transition-shadow duration-300">
-            <div className="flex items-center justify-between">
-              <span className="section-badge hover:scale-105 transition-transform cursor-default">Personnel File</span>
-              <span className="font-mono text-[10px] text-[var(--silver-muted)]">CLEARANCE: LEVEL 1</span>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded bg-[var(--bg-elevated)] border border-[var(--border)] flex items-center justify-center transition-all duration-300 hover:scale-110 hover:border-[var(--accent)] hover:rotate-3">
-                  <Code2 className="w-8 h-8 text-[var(--accent)]" />
-                </div>
-                <div>
-                  <h3 className="font-display text-xl font-bold text-[var(--text-primary)]">WATER</h3>
-                  <p className="font-mono text-xs text-[var(--text-muted)]">Roblox Developer · {SITE.age}</p>
-                </div>
+    <section id="about" className="py-24 px-6">
+      <div className="max-w-4xl mx-auto w-full">
+        <div className="grid md:grid-cols-2 gap-8 items-start">
+          <div className="card card-accent p-6 space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded bg-[var(--bg-elevated)] border border-[var(--border)] flex items-center justify-center">
+                <Code2 className="w-6 h-6 text-[var(--accent)]" />
               </div>
-
-              <div className="space-y-3 font-mono text-sm">
-                <div className="flex justify-between py-2 border-b border-[var(--border)] hover:border-[var(--accent)] transition-colors">
-                  <span className="text-[var(--text-muted)]">Role</span>
-                  <span className="text-[var(--text-secondary)]">Backend / UI / Gameplay</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-[var(--border)] hover:border-[var(--accent)] transition-colors">
-                  <span className="text-[var(--text-muted)]">Experience</span>
-                  <span className="text-[var(--text-secondary)]">4+ Years</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-[var(--border)] hover:border-[var(--accent)] transition-colors">
-                  <span className="text-[var(--text-muted)]">Status</span>
-                  <span className="flex items-center gap-2 text-[#22C55E]">
-                    <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
-                    Available
-                  </span>
-                </div>
-                <div className="flex justify-between py-2 hover:text-[var(--accent)] transition-colors">
-                  <span className="text-[var(--text-muted)]">Discord</span>
-                  <span className="text-[var(--text-secondary)]">{SITE.discord}</span>
-                </div>
+              <div>
+                <h3 className="font-display text-xl font-bold text-[var(--text-primary)]">WATER</h3>
+                <p className="font-mono text-xs text-[var(--text-muted)]">Roblox Developer · {SITE.age}</p>
+              </div>
+            </div>
+            <div className="space-y-2 font-mono text-sm">
+              <div className="flex justify-between py-2 border-b border-[var(--border)]">
+                <span className="text-[var(--text-muted)]">Role</span>
+                <span className="text-[var(--text-secondary)]">Backend / UI / Gameplay</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-[var(--border)]">
+                <span className="text-[var(--text-muted)]">Experience</span>
+                <span className="text-[var(--text-secondary)]">4+ Years</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-[var(--border)]">
+                <span className="text-[var(--text-muted)]">Status</span>
+                <span className="flex items-center gap-2 text-[#22C55E]">
+                  <span className="w-2 h-2 rounded-full bg-current" /> Available
+                </span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="text-[var(--text-muted)]">Discord</span>
+                <span className="text-[var(--text-secondary)]">{SITE.discord}</span>
               </div>
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="section-badge inline-flex hover:scale-105 transition-transform cursor-default">
-              <Shield className="w-3.5 h-3.5" />
-              About
-            </div>
-
+          <div className="space-y-4">
+            <div className="section-badge"><Shield className="w-3.5 h-3.5" /> About</div>
             <h2 className="section-title">
-              Building Systems That <span className="text-glow">Work</span>
+              Building Systems That <span className="text-[var(--accent)]">Work</span>
             </h2>
-
             <p className="text-[var(--text-secondary)] leading-relaxed">
-              I&apos;m a self-taught Roblox developer focused on building reliable, performant systems. I care about
-              clean code, proper architecture, and ensuring the things I build actually work under pressure.
+              I&apos;m a self-taught Roblox developer focused on building reliable, performant systems. I care about clean code, proper architecture, and ensuring the things I build actually work under pressure.
             </p>
-
             <p className="text-[var(--text-secondary)] leading-relaxed">
-              My work spans backend systems, data persistence, gameplay mechanics, and user interfaces. I approach
-              each project with attention to detail and a focus on delivering something that&apos;s not just functional,
-              but well-made.
+              My work spans backend systems, data persistence, gameplay mechanics, and user interfaces. I approach each project with attention to detail and a focus on delivering something that&apos;s not just functional, but well-made.
             </p>
-
-            <div className="p-4 bg-[var(--bg-surface)] border-l-2 border-[var(--accent)] rounded-r hover:border-l-4 transition-all duration-200 hover:bg-[var(--accent-muted)]">
-              <p className="text-sm text-[var(--text-primary)] italic">
-                &quot;Clean systems lead to better gameplay. Better gameplay leads to happier players. Happy players
-                lead to better games.&quot;
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {['Luau', 'DataStore', 'ProfileService', 'UI/UX', 'Figma', 'Optimization'].map((skill, i) => (
-                <span
-                  key={skill}
-                  className="tag hover:scale-105 hover:border-[var(--accent)] transition-all duration-200 cursor-default"
-                  style={{ animationDelay: `${i * 0.05}s` }}
-                >
-                  {skill}
-                </span>
+            <div className="flex flex-wrap gap-2 pt-2">
+              {['Luau', 'DataStore', 'ProfileService', 'UI/UX', 'Figma', 'Optimization'].map((skill) => (
+                <span key={skill} className="tag">{skill}</span>
               ))}
             </div>
           </div>
@@ -478,70 +206,34 @@ function About() {
 }
 
 // ── Skills ───────────────────────────────────────────────────────
-function SkillBar({ skill, isVisible, index }: { skill: (typeof SKILLS)[number]; isVisible: boolean; index: number }) {
-  return (
-    <div className="card p-5 space-y-3" style={{ animationDelay: `${index * 0.1}s` }}>
-      <div className="flex justify-between items-center">
-        <span className="font-mono text-sm text-[var(--text-primary)]">{skill.name}</span>
-        <span className={`font-mono text-xs ${COLOR_TEXT[skill.color]}`}>{skill.pct}%</span>
-      </div>
-      <div className="progress-bar">
-        <div
-          className="progress-fill"
-          style={{
-            width: isVisible ? `${skill.pct}%` : '0%',
-            transitionDelay: `${index * 0.1}s`,
-            background: COLOR_FILL[skill.color],
-          }}
-        />
-      </div>
-      <p className="font-mono text-[10px] text-[var(--text-muted)]">{skill.desc}</p>
-    </div>
-  );
-}
-
 function Skills() {
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => entry.isIntersecting && setIsVisible(true),
-      { threshold: 0.15 },
-    );
-    if (sectionRef.current) observer.observe(sectionRef.current);
-    return () => observer.disconnect();
-  }, []);
+  const coreSkills = SKILLS.filter(s => ['Luau', 'Backend', 'Gameplay', 'UI/UX'].includes(s.name));
+  const toolSkills = SKILLS.filter(s => !['Luau', 'Backend', 'Gameplay', 'UI/UX'].includes(s.name));
 
   return (
-    <section ref={sectionRef} id="skills" className="min-h-screen flex items-center py-24 px-6">
-      <div className="max-w-6xl mx-auto w-full space-y-12">
+    <section id="skills" className="py-24 px-6">
+      <div className="max-w-4xl mx-auto w-full space-y-8">
         <div className="text-center space-y-4">
-          <div className="section-badge inline-flex">
-            <Cpu className="w-3.5 h-3.5" />
-            Systems Specs
-          </div>
+          <div className="section-badge">Skills</div>
           <h2 className="section-title">Technical Capabilities</h2>
-          <p className="text-[var(--text-muted)] max-w-md mx-auto">
-            Core competencies in Roblox development, from backend to UI.
-          </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {SKILLS.map((skill, index) => (
-            <SkillBar key={skill.name} skill={skill} isVisible={isVisible} index={index} />
-          ))}
+        <div className="card p-6 space-y-4">
+          <h3 className="font-display font-bold text-[var(--text-primary)]">Core Development</h3>
+          <div className="flex flex-wrap gap-2">
+            {coreSkills.map((skill) => (
+              <span key={skill.name} className={`tag ${COLOR_TEXT[skill.color]}`}>{skill.name}</span>
+            ))}
+          </div>
         </div>
 
-        <div className="text-center pt-4">
-          <span className="font-mono text-[10px] tracking-widest uppercase text-[var(--text-muted)]">
-            // Unofficial Diagnostics
-          </span>
-        </div>
-        <div className="grid md:grid-cols-2 gap-6">
-          {FUN_SKILLS.map((skill, index) => (
-            <SkillBar key={skill.name} skill={skill} isVisible={isVisible} index={index} />
-          ))}
+        <div className="card p-6 space-y-4">
+          <h3 className="font-display font-bold text-[var(--text-primary)]">Tools & Systems</h3>
+          <div className="flex flex-wrap gap-2">
+            {toolSkills.map((skill) => (
+              <span key={skill.name} className={`tag ${COLOR_TEXT[skill.color]}`}>{skill.name}</span>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -549,246 +241,126 @@ function Skills() {
 }
 
 // ── Live Roblox ──────────────────────────────────────────────────
-function StatPill({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
-  return (
-    <div className="flex flex-col items-center gap-1 px-2 py-2 rounded bg-[var(--bg-elevated)] border border-[var(--border)]">
-      <div className="flex items-center gap-1.5 text-[var(--silver)]">
-        {icon}
-        <span className="font-display font-bold text-sm text-[var(--text-primary)]">{value}</span>
-      </div>
-      <span className="hud-label !text-[9px]">{label}</span>
-    </div>
-  );
-}
-
 function GameCard({ game }: { game: RobloxGame }) {
-  const ratio =
-    game.upVotes + game.downVotes > 0
-      ? Math.round((game.upVotes / (game.upVotes + game.downVotes)) * 100)
-      : null;
+  const ratio = game.upVotes + game.downVotes > 0 ? Math.round((game.upVotes / (game.upVotes + game.downVotes)) * 100) : null;
 
   return (
-    <a
-      href={game.link}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="card overflow-hidden group flex flex-col"
-    >
-      <div className="relative h-44 overflow-hidden bg-[var(--bg-elevated)]">
+    <a href={game.link} target="_blank" rel="noopener noreferrer" className="card overflow-hidden flex flex-col">
+      <div className="relative h-36 bg-[var(--bg-elevated)]">
         {game.bannerUrl ? (
-          <img
-            src={game.bannerUrl}
-            alt={`${game.title} thumbnail`}
-            crossOrigin="anonymous"
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
+          <img src={game.bannerUrl} alt={game.title} crossOrigin="anonymous" className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <Gamepad2 className="w-10 h-10 text-[var(--text-muted)]" />
           </div>
         )}
-        {/* Live playing badge */}
-        <div className="absolute top-3 left-3 flex items-center gap-2 px-2.5 py-1 rounded bg-[var(--bg-deep)]/85 border border-[#22C55E]/40 backdrop-blur-sm">
-          <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse" />
-          <span className="font-mono text-[11px] font-semibold text-[#22C55E]">
-            {fmtNum(game.playing)} playing
-          </span>
+        <div className="absolute top-2 left-2 live-badge">
+          <span className="live-dot" /> {fmtNum(game.playing)} playing
         </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-deep)] via-transparent to-transparent opacity-80" />
         {game.iconUrl && (
-          <img
-            src={game.iconUrl}
-            alt=""
-            crossOrigin="anonymous"
-            className="absolute bottom-3 left-3 w-12 h-12 rounded-lg border border-[var(--border)] shadow-lg"
-          />
+          <img src={game.iconUrl} alt="" crossOrigin="anonymous" className="absolute bottom-2 left-2 w-10 h-10 rounded border border-[var(--border)]" />
         )}
       </div>
-
-      <div className="p-5 space-y-4 flex-1 flex flex-col">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-display font-bold text-[var(--text-primary)] leading-tight group-hover:text-[var(--accent)] transition-colors">
-            {game.title}
-          </h3>
-          <Play className="w-4 h-4 text-[var(--text-muted)] shrink-0 group-hover:text-[var(--accent)] transition-colors" />
-        </div>
-
-        <div className="grid grid-cols-3 gap-2 mt-auto">
-          <StatPill icon={<Eye className="w-3.5 h-3.5" />} value={fmtNum(game.visits)} label="Visits" />
-          <StatPill icon={<Heart className="w-3.5 h-3.5" />} value={fmtNum(game.favorites)} label="Favorites" />
-          <StatPill
-            icon={<ThumbsUp className="w-3.5 h-3.5" />}
-            value={ratio != null ? `${ratio}%` : '—'}
-            label="Rating"
-          />
+      <div className="p-4 space-y-2">
+        <h3 className="font-display font-bold text-[var(--text-primary)]">{game.title}</h3>
+        <div className="flex gap-4 text-xs text-[var(--text-muted)]">
+          <span><Eye className="w-3 h-3 inline mr-1" />{fmtNum(game.visits)}</span>
+          <span><Heart className="w-3 h-3 inline mr-1" />{fmtNum(game.favorites)}</span>
+          {ratio != null && <span><ThumbsUp className="w-3 h-3 inline mr-1" />{ratio}%</span>}
         </div>
       </div>
     </a>
   );
 }
 
-function GameSkeleton() {
-  return (
-    <div className="card overflow-hidden">
-      <div className="h-44 bg-[var(--bg-elevated)] animate-pulse" />
-      <div className="p-5 space-y-4">
-        <div className="h-5 w-2/3 bg-[var(--bg-elevated)] rounded animate-pulse" />
-        <div className="grid grid-cols-3 gap-2">
-          <div className="h-12 bg-[var(--bg-elevated)] rounded animate-pulse" />
-          <div className="h-12 bg-[var(--bg-elevated)] rounded animate-pulse" />
-          <div className="h-12 bg-[var(--bg-elevated)] rounded animate-pulse" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function RobloxLive({ data }: { data: ReturnType<typeof useRoblox> }) {
-  const { profile, games, loading, error, lastUpdated } = data;
+  const { profile, games, loading, lastUpdated } = data;
 
   return (
-    <section id="roblox" className="min-h-screen flex items-center py-24 px-6">
-      <div className="max-w-6xl mx-auto w-full space-y-12">
+    <section id="roblox" className="py-24 px-6">
+      <div className="max-w-4xl mx-auto w-full space-y-8">
         <div className="text-center space-y-4">
-          <div className="section-badge inline-flex">
-            <Activity className="w-3.5 h-3.5" />
-            Live Telemetry
-          </div>
-          <h2 className="section-title">
-            Live <span className="text-glow">Roblox</span> Stats
-          </h2>
-          <p className="text-[var(--text-muted)] max-w-lg mx-auto">
-            Real-time player counts, visits, and favorites pulled straight from the Roblox API. Player counts
-            auto-refresh every 30 seconds.
-          </p>
+          <div className="section-badge"><Activity className="w-3.5 h-3.5" /> Live Stats</div>
+          <h2 className="section-title">Live Roblox Stats</h2>
+          <p className="text-[var(--text-muted)] max-w-md mx-auto">Real-time player counts and statistics from the Roblox API.</p>
           {lastUpdated && (
-            <p className="font-mono text-[10px] text-[var(--silver-muted)]">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#22C55E] mr-2 align-middle animate-pulse" />
-              Last synced {new Date(lastUpdated).toLocaleTimeString()}
-            </p>
+            <p className="font-mono text-xs text-[var(--text-muted)]">Last synced {new Date(lastUpdated).toLocaleTimeString()}</p>
           )}
         </div>
 
-        {/* Profile card */}
         <div className="card card-accent p-6 flex flex-col sm:flex-row items-center gap-6">
-          <div className="w-24 h-24 rounded-lg overflow-hidden bg-[var(--bg-elevated)] border border-[var(--border)] shrink-0 flex items-center justify-center">
+          <div className="w-20 h-20 rounded overflow-hidden bg-[var(--bg-elevated)] flex items-center justify-center">
             {profile?.headshotUrl ? (
-              <img
-                src={profile.headshotUrl}
-                alt="Roblox avatar"
-                crossOrigin="anonymous"
-                className="w-full h-full object-cover"
-              />
+              <img src={profile.headshotUrl} alt="Avatar" crossOrigin="anonymous" className="w-full h-full object-cover" />
             ) : (
               <Users className="w-10 h-10 text-[var(--text-muted)]" />
             )}
           </div>
           <div className="flex-1 text-center sm:text-left">
-            <h3 className="font-display text-2xl font-bold text-[var(--text-primary)]">
-              {profile?.displayName ?? SITE.name}
-            </h3>
-            <p className="font-mono text-xs text-[var(--text-muted)]">
-              @{profile?.username ?? 'water'}
-              {profile?.created && ` · since ${new Date(profile.created).getFullYear()}`}
-            </p>
+            <h3 className="font-display text-xl font-bold text-[var(--text-primary)]">{profile?.displayName ?? SITE.name}</h3>
+            <p className="font-mono text-xs text-[var(--text-muted)]">@{profile?.username ?? 'water'}</p>
           </div>
-          <div className="flex gap-3">
-            <div className="text-center px-4">
+          <div className="flex gap-6">
+            <div className="text-center">
               <div className="hud-value text-[var(--accent)]">{fmtNum(profile?.followers)}</div>
               <div className="hud-label">Followers</div>
             </div>
-            <div className="w-px bg-[var(--border)]" />
-            <div className="text-center px-4">
+            <div className="text-center">
               <div className="hud-value">{fmtNum(profile?.friends)}</div>
               <div className="hud-label">Friends</div>
             </div>
           </div>
         </div>
 
-        {/* Loading spinner while fetching data */}
-        {loading && (
-          <div className="flex justify-center py-4">
-            <div className="spinner"></div>
-          </div>
-        )}
-        {/* Games grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {loading && <div className="flex justify-center"><div className="spinner" /></div>}
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {loading && !games.length ? (
             <>
-              <GameSkeleton />
-              <GameSkeleton />
-              <GameSkeleton />
+              <div className="card"><div className="h-36 bg-[var(--bg-elevated)]" /><div className="p-4 space-y-2"><div className="h-5 w-2/3 bg-[var(--bg-elevated)] rounded" /></div></div>
+              <div className="card"><div className="h-36 bg-[var(--bg-elevated)]" /><div className="p-4 space-y-2"><div className="h-5 w-2/3 bg-[var(--bg-elevated)] rounded" /></div></div>
+              <div className="card"><div className="h-36 bg-[var(--bg-elevated)]" /><div className="p-4 space-y-2"><div className="h-5 w-2/3 bg-[var(--bg-elevated)] rounded" /></div></div>
             </>
           ) : (
             games.map((game) => <GameCard key={game.universeId} game={game} />)
           )}
         </div>
-
-        {error && !games.length && (
-          <div className="card p-6 text-center space-y-2">
-            <p className="text-[var(--text-secondary)]">Live stats are temporarily unavailable.</p>
-            <p className="font-mono text-xs text-[var(--text-muted)]">
-              The Roblox API may be rate-limiting requests — try refreshing in a moment.
-            </p>
-          </div>
-        )}
       </div>
     </section>
   );
 }
 
 // ── Projects ─────────────────────────────────────────────────────
-function ProjectCard({ project, index }: { project: (typeof PROJECTS)[number]; index: number }) {
+function ProjectCard({ project }: { project: (typeof PROJECTS)[number] }) {
   const isYt = project.media === 'youtube';
   const videoId = isYt ? ytId(project.src) : null;
   const thumb = isYt && videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : project.src;
   const href = project.link || project.src;
 
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`card ${COLOR_BORDER_TOP[project.color]} overflow-hidden group flex flex-col`}
-      style={{ animationDelay: `${index * 0.08}s` }}
-    >
-      <div className="relative h-40 bg-[var(--bg-elevated)] overflow-hidden">
+    <a href={href} target="_blank" rel="noopener noreferrer" className="card overflow-hidden flex flex-col">
+      <div className="relative h-32 bg-[var(--bg-elevated)]">
         {thumb ? (
-          <img
-            src={thumb}
-            alt={`${project.title} preview`}
-            crossOrigin="anonymous"
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:rotate-1"
-          />
+          <img src={thumb} alt={project.title} crossOrigin="anonymous" className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <Code2 className="w-12 h-12 text-[var(--text-muted)] group-hover:text-[var(--accent)] group-hover:scale-110 transition-all duration-300" />
+            <Code2 className="w-10 h-10 text-[var(--text-muted)]" />
           </div>
         )}
         {isYt && (
-          <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-deep)]/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <span className="w-14 h-14 rounded-full bg-[var(--accent)] flex items-center justify-center transform scale-75 group-hover:scale-100 transition-transform duration-300 shadow-lg shadow-[var(--accent)]/30">
-              <Play className="w-6 h-6 text-white ml-0.5" />
+          <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-base)]/50">
+            <span className="w-10 h-10 rounded-full bg-[var(--accent)] flex items-center justify-center">
+              <Play className="w-4 h-4 text-white ml-0.5" />
             </span>
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-deep)] via-transparent to-transparent opacity-60" />
       </div>
-      <div className="p-5 space-y-3 flex-1 flex flex-col">
+      <div className="p-4 space-y-2">
         <div className="flex justify-between items-start gap-2">
-          <h3 className="font-display font-bold text-[var(--text-primary)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300">
-            {project.title}
-          </h3>
-          <span className="tag shrink-0 group-hover:border-[var(--accent)] transition-colors">{project.category}</span>
+          <h3 className="font-display font-bold text-[var(--text-primary)]">{project.title}</h3>
+          <span className="tag shrink-0">{project.category}</span>
         </div>
-        <p className="text-sm text-[var(--text-muted)] leading-relaxed flex-1">{project.description}</p>
-        <div className="flex flex-wrap gap-1.5 pt-2">
-          {project.tags.map((tag) => (
-            <span key={tag} className="text-[10px] font-mono text-[var(--silver-muted)] group-hover:text-[var(--text-secondary)] transition-colors">
-              {tag}
-            </span>
-          ))}
-        </div>
+        <p className="text-sm text-[var(--text-muted)] line-clamp-2">{project.description}</p>
       </div>
     </a>
   );
@@ -797,46 +369,24 @@ function ProjectCard({ project, index }: { project: (typeof PROJECTS)[number]; i
 function Projects() {
   const categories = ['ALL', ...Array.from(new Set(PROJECTS.map((p) => p.category)))];
   const [filter, setFilter] = useState('ALL');
-  const { ref, isVisible } = useScrollReveal();
-
   const filtered = filter === 'ALL' ? PROJECTS : PROJECTS.filter((p) => p.category === filter);
 
   return (
-    <section ref={ref} id="projects" className="min-h-screen flex items-center py-24 px-6">
-      <div className="max-w-6xl mx-auto w-full space-y-12">
-        <div className={`space-y-4 ${isVisible ? 'section-enter' : 'opacity-0'}`}>
-          <div className="section-badge hover:scale-105 transition-transform cursor-default">
-            <Database className="w-3.5 h-3.5" />
-            Project Database
-          </div>
+    <section id="projects" className="py-24 px-6">
+      <div className="max-w-4xl mx-auto w-full space-y-8">
+        <div className="space-y-4">
+          <div className="section-badge"><Database className="w-3.5 h-3.5" /> Projects</div>
           <h2 className="section-title">Featured Work</h2>
-          <p className="text-[var(--text-muted)] max-w-md">
-            A selection of games, systems, and tools I&apos;ve built for Roblox.
-          </p>
         </div>
-
-        <div className={`flex flex-wrap gap-2 ${isVisible ? 'animate-fade-in stagger-2' : 'opacity-0'}`}>
+        <div className="flex flex-wrap gap-2">
           {categories.map((cat) => (
-            <RippleButton
-              key={cat}
-              onClick={() => setFilter(cat)}
-              className={`filter-btn font-mono text-xs tracking-wider uppercase px-3 py-1.5 rounded transition-all duration-300 ${
-                filter === cat
-                  ? 'bg-[var(--accent)] text-white active shadow-lg shadow-[var(--accent)]/20'
-                  : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--text-secondary)]'
-              }`}
-            >
+            <button key={cat} onClick={() => setFilter(cat)} className={`filter-btn ${filter === cat ? 'active' : ''}`}>
               {cat}
-            </RippleButton>
+            </button>
           ))}
         </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((project, index) => (
-            <div key={project.title} className={isVisible ? 'animate-fade-in' : 'opacity-0'} style={{ animationDelay: `${index * 0.1}s` }}>
-              <ProjectCard project={project} index={index} />
-            </div>
-          ))}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((project) => <ProjectCard key={project.title} project={project} />)}
         </div>
       </div>
     </section>
@@ -844,223 +394,92 @@ function Projects() {
 }
 
 // ── Gallery ──────────────────────────────────────────────────────
-function GalleryItemCard({
-  item,
-  index,
-  onClick,
-}: {
-  item: GalleryItem;
-  index: number;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="card overflow-hidden group flex flex-col text-left w-full transform-gpu"
-      style={{ animationDelay: `${index * 0.08}s` }}
-    >
-      <div className="relative h-48 bg-[var(--bg-elevated)] overflow-hidden">
-        <img
-          src={item.src}
-          alt={item.title}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-deep)] via-transparent to-transparent opacity-60" />
-        <div className="absolute inset-0 bg-[var(--accent)]/0 group-hover:bg-[var(--accent)]/10 transition-colors duration-300" />
-        <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 rounded bg-[var(--bg-deep)]/80 border border-[var(--border)] opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-          <Maximize2 className="w-3.5 h-3.5 text-[var(--accent)]" />
-          <span className="font-mono text-[10px] text-[var(--text-muted)]">View</span>
-        </div>
-        <div className="absolute bottom-3 left-3">
-          <span className="tag bg-[var(--accent-muted)] border-[var(--border-accent)] text-[var(--accent-bright)] group-hover:scale-105 transition-transform">
-            {item.category}
-          </span>
-        </div>
-      </div>
-      <div className="p-4 space-y-2">
-        <h3 className="font-display font-bold text-[var(--text-primary)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300">
-          {item.title}
-        </h3>
-        <p className="text-xs text-[var(--text-muted)] leading-relaxed line-clamp-2">{item.description}</p>
-        <div className="flex flex-wrap gap-1 pt-1">
-          {item.tags.map((tag) => (
-            <span key={tag} className="text-[10px] font-mono text-[var(--silver-muted)] group-hover:text-[var(--text-secondary)] transition-colors">
-              {tag}
-            </span>
-          ))}
-        </div>
-      </div>
-    </button>
-  );
-}
-
-function GalleryLightbox({
-  item,
-  onClose,
-  onPrev,
-  onNext,
-  hasPrev,
-  hasNext,
-}: {
-  item: GalleryItem;
-  onClose: () => void;
-  onPrev: () => void;
-  onNext: () => void;
-  hasPrev: boolean;
-  hasNext: boolean;
-}) {
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      if (e.key === 'ArrowLeft' && hasPrev) onPrev();
-      if (e.key === 'ArrowRight' && hasNext) onNext();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
-    };
-  }, [onClose, onPrev, onNext, hasPrev, hasNext]);
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 animate-fade-in-fast">
-      <div className="absolute inset-0 bg-[var(--bg-deep)]/95 backdrop-blur-md" onClick={onClose} />
-      <RippleButton
-        onClick={onClose}
-        className="absolute top-4 right-4 md:top-6 md:right-6 z-10 p-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--accent)] transition-all duration-300 hover:scale-110 bg-transparent"
-        aria-label="Close lightbox"
-      >
-        <CloseIcon className="w-5 h-5 text-[var(--text-secondary)]" />
-      </RippleButton>
-      {hasPrev && (
-        <RippleButton
-          onClick={onPrev}
-          className="absolute left-4 md:left-6 z-10 p-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--accent)] transition-all duration-300 hover:scale-110 bg-transparent"
-          aria-label="Previous image"
-        >
-          <ArrowRight className="w-5 h-5 text-[var(--text-secondary)] rotate-180" />
-        </RippleButton>
-      )}
-      {hasNext && (
-        <RippleButton
-          onClick={onNext}
-          className="absolute right-4 md:right-16 z-10 p-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] hover:border-[var(--accent)] transition-all duration-300 hover:scale-110 bg-transparent"
-          aria-label="Next image"
-        >
-          <ArrowRight className="w-5 h-5 text-[var(--text-secondary)]" />
-        </RippleButton>
-      )}
-      <div className="relative z-10 max-w-5xl w-full flex flex-col gap-4 animate-scale-in">
-        <div className="card overflow-hidden">
-          <img
-            src={item.src}
-            alt={item.title}
-            className="w-full max-h-[70vh] object-contain bg-[var(--bg-elevated)]"
-          />
-        </div>
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 px-2 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          <div className="space-y-1">
-            <span className="tag bg-[var(--accent-muted)] border-[var(--border-accent)] text-[var(--accent-bright)]">
-              {item.category}
-            </span>
-            <h3 className="font-display text-xl font-bold text-[var(--text-primary)]">{item.title}</h3>
-            <p className="text-sm text-[var(--text-muted)]">{item.description}</p>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {item.tags.map((tag) => (
-              <span key={tag} className="tag">
-                {tag}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function Gallery() {
   const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const categories = ['ALL', ...Array.from(new Set(GALLERY.map((p) => p.category)))];
   const [filter, setFilter] = useState('ALL');
-  const { ref, isVisible } = useScrollReveal();
-
   const filtered = filter === 'ALL' ? GALLERY : GALLERY.filter((p) => p.category === filter);
 
-  const handleSelect = (item: GalleryItem, index: number) => {
-    setSelectedItem(item);
-    setSelectedIndex(index);
-  };
-
-  const handleClose = () => setSelectedItem(null);
-
   const handlePrev = () => {
-    if (selectedIndex > 0) {
-      setSelectedItem(filtered[selectedIndex - 1]);
-      setSelectedIndex(selectedIndex - 1);
-    }
+    if (selectedIndex > 0) { setSelectedItem(filtered[selectedIndex - 1]); setSelectedIndex(selectedIndex - 1); }
+  };
+  const handleNext = () => {
+    if (selectedIndex < filtered.length - 1) { setSelectedItem(filtered[selectedIndex + 1]); setSelectedIndex(selectedIndex + 1); }
   };
 
-  const handleNext = () => {
-    if (selectedIndex < filtered.length - 1) {
-      setSelectedItem(filtered[selectedIndex + 1]);
-      setSelectedIndex(selectedIndex + 1);
-    }
-  };
+  useEffect(() => {
+    if (!selectedItem) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedItem(null);
+      if (e.key === 'ArrowLeft') handlePrev();
+      if (e.key === 'ArrowRight') handleNext();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    document.body.style.overflow = 'hidden';
+    return () => { window.removeEventListener('keydown', handleKeyDown); document.body.style.overflow = ''; };
+  }, [selectedItem, selectedIndex]);
 
   return (
-    <section ref={ref} id="gallery" className="min-h-screen flex items-center py-24 px-6">
-      <div className="max-w-6xl mx-auto w-full space-y-12">
-        <div className={`space-y-4 ${isVisible ? 'section-enter' : 'opacity-0'}`}>
-          <div className="section-badge hover:scale-105 transition-transform cursor-default">
-            <ImageIcon className="w-3.5 h-3.5" />
-            UI Gallery
-          </div>
-          <h2 className="section-title">Visual Showcase (Testing)</h2>
-          <p className="text-[var(--text-muted)] max-w-md">
-            A collection of UI designs, interfaces, and visual work created for Roblox games.
-          </p>
+    <section id="gallery" className="py-24 px-6">
+      <div className="max-w-4xl mx-auto w-full space-y-8">
+        <div className="space-y-4">
+          <div className="section-badge"><ImageIcon className="w-3.5 h-3.5" /> Gallery</div>
+          <h2 className="section-title">UI Showcase</h2>
         </div>
-
-        <div className={`flex flex-wrap gap-2 ${isVisible ? 'animate-fade-in stagger-2' : 'opacity-0'}`}>
+        <div className="flex flex-wrap gap-2">
           {categories.map((cat) => (
-            <RippleButton
-              key={cat}
-              onClick={() => setFilter(cat)}
-              className={`filter-btn font-mono text-xs tracking-wider uppercase px-3 py-1.5 rounded transition-all duration-300 ${
-                filter === cat
-                  ? 'bg-[var(--accent)] text-white active shadow-lg shadow-[var(--accent)]/20'
-                  : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--text-secondary)]'
-              }`}
-            >
+            <button key={cat} onClick={() => setFilter(cat)} className={`filter-btn ${filter === cat ? 'active' : ''}`}>
               {cat}
-            </RippleButton>
+            </button>
           ))}
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((item, index) => (
-            <div key={item.title} className={isVisible ? 'animate-fade-in' : 'opacity-0'} style={{ animationDelay: `${index * 0.08}s` }}>
-              <GalleryItemCard
-                item={item}
-                index={index}
-                onClick={() => handleSelect(item, index)}
-              />
-            </div>
+            <button
+              key={item.title}
+              onClick={() => { setSelectedItem(item); setSelectedIndex(index); }}
+              className="card overflow-hidden text-left"
+            >
+              <div className="relative h-32 bg-[var(--bg-elevated)]">
+                <img src={item.src} alt={item.title} className="w-full h-full object-cover" />
+                <div className="absolute bottom-2 left-2"><span className="tag">{item.category}</span></div>
+              </div>
+              <div className="p-4 space-y-1">
+                <h3 className="font-display font-bold text-[var(--text-primary)]">{item.title}</h3>
+                <p className="text-xs text-[var(--text-muted)] line-clamp-2">{item.description}</p>
+              </div>
+            </button>
           ))}
         </div>
 
         {selectedItem && (
-          <GalleryLightbox
-            item={selectedItem}
-            onClose={handleClose}
-            onPrev={handlePrev}
-            onNext={handleNext}
-            hasPrev={selectedIndex > 0}
-            hasNext={selectedIndex < filtered.length - 1}
-          />
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-[var(--bg-base)]/95" onClick={() => setSelectedItem(null)} />
+            <button onClick={() => setSelectedItem(null)} className="absolute top-4 right-4 z-10 p-2">
+              <X className="w-5 h-5 text-[var(--text-secondary)]" />
+            </button>
+            {selectedIndex > 0 && (
+              <button onClick={handlePrev} className="absolute left-4 z-10 p-2">
+                <ArrowRight className="w-5 h-5 text-[var(--text-secondary)] rotate-180" />
+              </button>
+            )}
+            {selectedIndex < filtered.length - 1 && (
+              <button onClick={handleNext} className="absolute right-4 z-10 p-2">
+                <ArrowRight className="w-5 h-5 text-[var(--text-secondary)]" />
+              </button>
+            )}
+            <div className="relative z-10 max-w-4xl w-full">
+              <div className="card overflow-hidden">
+                <img src={selectedItem.src} alt={selectedItem.title} className="w-full max-h-[70vh] object-contain bg-[var(--bg-elevated)]" />
+              </div>
+              <div className="pt-4 space-y-1">
+                <span className="tag">{selectedItem.category}</span>
+                <h3 className="font-display text-lg font-bold text-[var(--text-primary)]">{selectedItem.title}</h3>
+                <p className="text-sm text-[var(--text-muted)]">{selectedItem.description}</p>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </section>
@@ -1069,47 +488,23 @@ function Gallery() {
 
 // ── History ──────────────────────────────────────────────────────
 function History() {
-  const { ref, isVisible } = useScrollReveal();
-
   return (
-    <section ref={ref} id="history" className="min-h-screen flex items-center py-24 px-6">
-      <div className="max-w-3xl mx-auto w-full space-y-12">
-        <div className={`text-center space-y-4 ${isVisible ? 'section-enter' : 'opacity-0'}`}>
-          <div className="section-badge inline-flex hover:scale-105 transition-transform cursor-default">
-            <Calendar className="w-3.5 h-3.5" />
-            Service Record
-          </div>
+    <section id="history" className="py-24 px-6">
+      <div className="max-w-3xl mx-auto w-full space-y-8">
+        <div className="text-center space-y-4">
+          <div className="section-badge"><Calendar className="w-3.5 h-3.5" /> Timeline</div>
           <h2 className="section-title">Development Timeline</h2>
-          <p className="text-[var(--text-muted)]">Key milestones and progression through the years.</p>
         </div>
-
         <div className="relative">
-          <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[var(--border)] to-transparent" />
-          <div className="space-y-8">
+          <div className="absolute left-3 md:left-1/2 top-0 bottom-0 w-px bg-[var(--border)]" />
+          <div className="space-y-6">
             {TIMELINE.map((item, index) => (
-              <div
-                key={index}
-                className={`relative flex items-center gap-6 ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'} ${isVisible ? 'animate-fade-in' : 'opacity-0'}`}
-                style={{ animationDelay: `${index * 0.15}s` }}
-              >
-                <div
-                  className={`absolute left-4 md:left-1/2 w-4 h-4 rounded-full border-2 border-[var(--bg-deep)] -translate-x-1/2 z-10 transition-all duration-500 ${item.accent ? 'bg-[var(--accent)] shadow-lg shadow-[var(--accent)]/40' : 'bg-[var(--silver-muted)]'} hover:scale-125`}
-                />
-                <div
-                  className={`card ml-12 md:ml-0 md:w-[calc(50%-2rem)] p-5 ${item.dim ? 'opacity-70' : ''} ${index % 2 === 0 ? 'md:text-right' : 'md:text-left'} hover:shadow-xl transition-shadow duration-300`}
-                >
-                  <div className="font-mono text-xs text-[var(--accent)] mb-2">{item.period}</div>
-                  <h3 className="font-display font-bold text-[var(--text-primary)] mb-1">{item.title}</h3>
+              <div key={index} className={`relative flex items-center gap-4 ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
+                <div className={`absolute left-3 md:left-1/2 w-3 h-3 rounded-full -translate-x-1/2 ${item.accent ? 'bg-[var(--accent)]' : 'bg-[var(--text-muted)]'}`} />
+                <div className={`card ml-8 md:ml-0 md:w-[calc(50%-1rem)] p-4 ${index % 2 === 0 ? 'md:text-right' : 'md:text-left'} ${item.dim ? 'opacity-60' : ''}`}>
+                  <div className="font-mono text-xs text-[var(--accent)] mb-1">{item.period}</div>
+                  <h3 className="font-display font-bold text-[var(--text-primary)]">{item.title}</h3>
                   <p className="text-sm text-[var(--text-muted)]">{item.description}</p>
-                  {item.tags.length > 0 && (
-                    <div className={`flex flex-wrap gap-1.5 pt-3 ${index % 2 === 0 ? 'md:justify-end' : ''}`}>
-                      {item.tags.map((tag) => (
-                        <span key={tag} className="tag hover:scale-105 hover:border-[var(--accent)] transition-all duration-200">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </div>
             ))}
@@ -1123,86 +518,51 @@ function History() {
 // ── Contact ──────────────────────────────────────────────────────
 function Contact() {
   const [copied, setCopied] = useState(false);
-  const { ref, isVisible } = useScrollReveal();
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(SITE.discord);
-    } catch {
-      /* ignore */
-    }
+    try { await navigator.clipboard.writeText(SITE.discord); } catch {}
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <section ref={ref} id="contact" className="min-h-screen flex items-center py-24 px-6">
-      <div className="max-w-2xl mx-auto w-full space-y-12 text-center">
-        <div className={`space-y-4 ${isVisible ? 'section-enter' : 'opacity-0'}`}>
-          <div className="section-badge inline-flex hover:scale-105 transition-transform cursor-default">
-            <Radio className="w-3.5 h-3.5" />
-            Contact
-          </div>
-          <h2 className="section-title">Open Communication</h2>
-          <p className="text-[var(--text-muted)] max-w-md mx-auto">
-            Interested in working together? Send a message through Discord or check out my Roblox profile.
-          </p>
+    <section id="contact" className="py-24 px-6">
+      <div className="max-w-lg mx-auto w-full space-y-8 text-center">
+        <div className="space-y-4">
+          <div className="section-badge"><Radio className="w-3.5 h-3.5" /> Contact</div>
+          <h2 className="section-title">Get In Touch</h2>
+          <p className="text-[var(--text-muted)]">Interested in working together? Reach out through Discord.</p>
         </div>
 
-        <div className={`inline-flex items-center gap-6 px-6 py-3 bg-[var(--bg-surface)] border border-[var(--border)] rounded ${isVisible ? 'animate-fade-in stagger-2' : 'opacity-0'}`}>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse" />
-            <span className="font-mono text-xs text-[#22C55E]">ONLINE</span>
-          </div>
-          <div className="w-px h-4 bg-[var(--border)]" />
-          <div className="font-mono text-xs text-[var(--text-muted)]">Response: Fast</div>
+        <div className="inline-flex items-center gap-4 px-4 py-2 bg-[var(--bg-surface)] border border-[var(--border)] rounded">
+          <span className="w-2 h-2 rounded-full bg-[#22C55E]" />
+          <span className="font-mono text-xs text-[#22C55E]">ONLINE</span>
         </div>
 
-        <div className={`space-y-4 ${isVisible ? 'animate-fade-in stagger-3' : 'opacity-0'}`}>
-          <RippleButton
-            onClick={handleCopy}
-            className="w-full card p-5 flex items-center gap-4 hover:border-[var(--accent)] transition-all duration-300 text-left group contact-btn bg-transparent border-none"
-          >
-            <div className="w-12 h-12 rounded bg-[#5865F2]/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
-              <svg className="w-6 h-6 text-[#5865F2]" viewBox="0 0 24 24" fill="currentColor">
+        <div className="space-y-3">
+          <button onClick={handleCopy} className="w-full card p-4 flex items-center gap-4 text-left">
+            <div className="w-10 h-10 rounded bg-[#5865F2]/10 flex items-center justify-center">
+              <svg className="w-5 h-5 text-[#5865F2]" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 8.776-.32 13.043.099 17.262a.08.08 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 14.75c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
               </svg>
             </div>
             <div className="flex-1">
-              <div className="font-mono text-xs text-[var(--text-muted)] mb-1">Discord</div>
-              <div className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors duration-300">
-                {SITE.discord}
-              </div>
+              <div className="font-mono text-xs text-[var(--text-muted)]">Discord</div>
+              <div className="font-display font-bold text-[var(--text-primary)]">{SITE.discord}</div>
             </div>
-            {copied ? (
-              <Check className="w-5 h-5 text-[#22C55E] animate-scale-in" />
-            ) : (
-              <Copy className="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors duration-300" />
-            )}
-          </RippleButton>
+            {copied ? <Check className="w-5 h-5 text-[#22C55E]" /> : <Copy className="w-5 h-5 text-[var(--text-muted)]" />}
+          </button>
 
-          <a
-            href={SITE.robloxProfile}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full card p-5 flex items-center gap-4 hover:border-[var(--accent)] transition-all duration-300 group"
-          >
-            <div className="w-12 h-12 rounded bg-[var(--accent-muted)] flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
-              <ExternalLink className="w-6 h-6 text-[var(--accent)]" />
+          <a href={SITE.robloxProfile} target="_blank" rel="noopener noreferrer" className="w-full card p-4 flex items-center gap-4">
+            <div className="w-10 h-10 rounded bg-[rgba(185,28,28,0.1)] flex items-center justify-center">
+              <ExternalLink className="w-5 h-5 text-[var(--accent)]" />
             </div>
             <div className="flex-1 text-left">
-              <div className="font-mono text-xs text-[var(--text-muted)] mb-1">Roblox Profile</div>
-              <div className="font-display font-bold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors duration-300">
-                View Profile
-              </div>
+              <div className="font-mono text-xs text-[var(--text-muted)]">Roblox Profile</div>
+              <div className="font-display font-bold text-[var(--text-primary)]">View Profile</div>
             </div>
-            <ArrowRight className="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--accent)] group-hover:translate-x-1 transition-all duration-300" />
+            <ArrowRight className="w-5 h-5 text-[var(--text-muted)]" />
           </a>
-        </div>
-
-        <div className={`pt-8 space-y-2 text-[var(--text-muted)] ${isVisible ? 'animate-fade-in stagger-4' : 'opacity-0'}`}>
-          <div className="font-mono text-[10px] tracking-wider">WATER.PORTFOLIO // ROBLOX DEVELOPER</div>
-          <div className="font-mono text-[10px] opacity-50">Built with React + Tailwind</div>
         </div>
       </div>
     </section>
@@ -1213,9 +573,6 @@ function Contact() {
 function App() {
   const [currentSection, setCurrentSection] = useState('hero');
   const roblox = useRoblox();
-  const totalPlaying = roblox.games.length
-    ? roblox.games.reduce((sum, g) => sum + g.playing, 0)
-    : null;
 
   const handleNavigate = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
@@ -1239,10 +596,10 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen grid-pattern">
+    <div className="min-h-screen">
       <Header currentSection={currentSection} onNavigate={handleNavigate} />
       <main>
-        <Hero onNavigate={handleNavigate} totalPlaying={totalPlaying} />
+        <Hero onNavigate={handleNavigate} />
         <About />
         <Skills />
         <RobloxLive data={roblox} />
